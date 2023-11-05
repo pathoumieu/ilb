@@ -3,7 +3,7 @@ include .env
 # DOCKER TASKS
 ## Base
 build:
-	DOCKER_BUILDKIT=1 docker build -t train_ilb:latest .
+	DOCKER_BUILDKIT=1 docker build --build-arg WANDB_API_KEY=${WANDB_API_KEY} \-t train_ilb:latest .
 
 push:
 	docker tag train_ilb thoumieupa/train_ilb:latest

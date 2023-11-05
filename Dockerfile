@@ -5,6 +5,9 @@ RUN apt update && apt install gcc -y && apt install -y git
 
 WORKDIR /train_ilb
 
+ARG WANDB_API_KEY
+ENV WANDB_API_KEY=${WANDB_API_KEY}
+
 COPY --link train_ilb.py ./
 
 RUN pip install --upgrade pip

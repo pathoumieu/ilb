@@ -1,4 +1,5 @@
 import sys
+import wandb
 import numpy as np
 import pandas as pd
 from sklearn.pipeline import Pipeline
@@ -6,9 +7,8 @@ from sklearn.preprocessing import FunctionTransformer
 from catboost import CatBoostRegressor
 # import yaml
 # import argparse
-# import wandb
 # from icecream import ic
-# from wandb.catboost import WandbCallback
+from wandb.catboost import WandbCallback
 from sklearn.model_selection import train_test_split
 from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import StandardScaler, OrdinalEncoder
@@ -70,6 +70,17 @@ def create_preprocessor_2(cont_cols, cat_cols):
     return preprocess_mapper
 
 
+wandb.login()
+run = wandb.init(
+    # set the wandb project where this run will be logged
+    project='ILB',
+    # name=args['run_name'],
+    # track hyperparameters and run metadata
+    # config=wandb_config
+)
+run_name = run.name
+config = run.config
+
 # Load the tabular data
 X_train = pd.read_csv("data/X_train_J01Z4CN.csv")
 y_train = pd.read_csv("data/y_train_OXxrJt1.csv")
@@ -120,6 +131,7 @@ X_train, X_valid, y_train, y_valid = train_test_split(X_train, y_train, test_siz
 preprocess_mapper = create_preprocessor(CONT_COLS, CAT_COLS)
 regressor = CatBoostRegressor(
     od_type=None,
+    eval_metric='MAPE',
     verbose=1000
 )
 tt = CustomTransformedTargetRegressor(
@@ -136,15 +148,24 @@ y_pred_train = estimator.fit(
     X_train,
     y_train.price.values,
     X_valid=X_valid,
-    y_valid=y_valid.price.values
+    y_valid=y_valid.price.values,
+    callbacks=[WandbCallback()]
 )
 
 y_pred_train = estimator.predict(X_train)
 y_pred_valid = estimator.predict(X_valid)
-print(MAPE(y_train.price, y_pred_train))
-print(MAPE(y_valid.price, y_pred_valid))
+
 y_pred_test = estimator.predict(X_test)
 
 if MAKE_SUB:
     y_random['price'] = y_pred_test
     y_random.to_csv('./data/submission.csv', index=False)
+
+run.log(
+    {
+        'MAPE_train': MAPE(y_train.price, y_pred_train),
+        'MAPE_valid': MAPE(y_valid.price, y_pred_valid)
+    }
+)
+
+run.finish()
