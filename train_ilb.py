@@ -2,6 +2,7 @@ import sys
 import numpy as np
 import pandas as pd
 from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import FunctionTransformer
 from catboost import CatBoostRegressor
 # import yaml
 # import argparse
@@ -13,15 +14,16 @@ from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import StandardScaler, OrdinalEncoder
 from sklearn.metrics import mean_absolute_percentage_error as MAPE
 from sklearn_pandas import gen_features, DataFrameMapper
-from sklearn.compose import TransformedTargetRegressor
+from crossval_ensemble.custom_pipeline import CustomRegressionPipeline
+from crossval_ensemble.custom_transformed_target_regressor import CustomTransformedTargetRegressor
 
 sys.path.append('/train')
 sys.path.append('../pricing/train')
 
 from utils import create_preprocessor  # noqa
 
-MAKE_SUB = True
 
+MAKE_SUB = False
 def create_preprocessor_2(cont_cols, cat_cols):
     cat_cols_list = [[cat_col] for cat_col in cat_cols]
     cont_cols_list = [[cont_col] for cont_col in cont_cols]
@@ -117,22 +119,24 @@ X_train, X_valid, y_train, y_valid = train_test_split(X_train, y_train, test_siz
 
 preprocess_mapper = create_preprocessor(CONT_COLS, CAT_COLS)
 regressor = CatBoostRegressor(
+    od_type=None,
     verbose=1000
 )
-tt = TransformedTargetRegressor(
+tt = CustomTransformedTargetRegressor(
     regressor=regressor,
-    func=np.log,
-    inverse_func=np.exp
+    transformer=FunctionTransformer(func=np.log, inverse_func=np.exp)
     )
 
-estimator = Pipeline(steps=[
+estimator = CustomRegressionPipeline(Pipeline(steps=[
             ('prepro', preprocess_mapper),
             ('estimator', tt)
-            ])
+            ]))
 
 y_pred_train = estimator.fit(
     X_train,
-    y_train.price
+    y_train.price.values,
+    X_valid=X_valid,
+    y_valid=y_valid.price.values
 )
 
 y_pred_train = estimator.predict(X_train)
