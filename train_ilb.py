@@ -157,9 +157,12 @@ y_pred_valid = estimator.predict(X_valid)
 
 y_pred_test = estimator.predict(X_test)
 
-if MAKE_SUB:
-    y_random['price'] = y_pred_test
-    y_random.to_csv('./data/submission.csv', index=False)
+y_random['price'] = y_pred_test
+y_random.to_csv('./data/submission.csv', index=False)
+artifact = wandb.Artifact(name="submission", type="test predictions")
+artifact.add_file(local_path='./data/submission.csv')
+run.log_artifact(artifact)
+
 
 run.log(
     {
