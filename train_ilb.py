@@ -68,6 +68,7 @@ def create_preprocessor_2(cont_cols, cat_cols):
 if __name__ == "__main__":
 
     cfd = os.environ.get("CONFIG_FILE_DIR", os.getcwd())
+    dfd = os.environ.get("DATA_FILE_DIR", f"{os.getcwd()}/data")
 
     parser = argparse.ArgumentParser(description='')
     parser.add_argument('--config-path', type=str, help='', default=f'{cfd}/config.yml')
@@ -97,10 +98,10 @@ if __name__ == "__main__":
     config = run.config
 
     # Load the tabular data
-    X_train = pd.read_csv("data/X_train_J01Z4CN.csv")
-    y_train = pd.read_csv("data/y_train_OXxrJt1.csv")
-    X_test = pd.read_csv("data/X_test_BEhvxAN.csv")
-    y_random = pd.read_csv("data/y_random_MhJDhKK.csv")
+    X_train = pd.read_csv(f"{dfd}/X_train_J01Z4CN.csv")
+    y_train = pd.read_csv(f"{dfd}/y_train_OXxrJt1.csv")
+    X_test = pd.read_csv(f"{dfd}/X_test_BEhvxAN.csv")
+    y_random = pd.read_csv(f"{dfd}/y_random_MhJDhKK.csv")
 
     CAT_COLS = [
         'property_type',
@@ -188,9 +189,9 @@ if __name__ == "__main__":
     y_pred_test = estimator.predict(X_test)
 
     y_random['price'] = y_pred_test
-    y_random.to_csv('./data/submission.csv', index=False)
+    y_random.to_csv(f'{dfd}/submission.csv', index=False)
     artifact = wandb.Artifact(name="submission", type="test predictions")
-    artifact.add_file(local_path='./data/submission.csv')
+    artifact.add_file(local_path=f'{dfd}/submission.csv')
     run.log_artifact(artifact)
 
 

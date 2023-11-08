@@ -1,0 +1,6 @@
+.env
+wandb*
+catboost_info
+.vscode
+venv
+data
