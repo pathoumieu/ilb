@@ -9,6 +9,7 @@ ARG WANDB_API_KEY
 ENV WANDB_API_KEY=${WANDB_API_KEY}
 
 COPY --link train_ilb.py ./
+COPY --link config.yml ./
 
 RUN pip install --upgrade pip
 COPY --link requirements.txt ./

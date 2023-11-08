@@ -1,0 +1,12 @@
+tags:
+  - catboost
+
+model_params:
+  iterations: 2
+  loss_function: MAE
+  eval_metric: MAPE
+  learning_rate: 0.01
+  max_depth: 6
+  one_hot_max_size: 8
+  random_seed: 0
+  verbose: False
