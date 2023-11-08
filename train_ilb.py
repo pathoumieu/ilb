@@ -14,13 +14,8 @@ from sklearn_pandas import gen_features, DataFrameMapper
 from crossval_ensemble.custom_pipeline import CustomRegressionPipeline
 from crossval_ensemble.custom_transformed_target_regressor import CustomTransformedTargetRegressor
 
-sys.path.append('/train')
-sys.path.append('../pricing/train')
 
-from utils import create_preprocessor  # noqa
-
-
-def create_preprocessor_2(cont_cols, cat_cols):
+def create_preprocessor(cont_cols, cat_cols):
     cat_cols_list = [[cat_col] for cat_col in cat_cols]
     cont_cols_list = [[cont_col] for cont_col in cont_cols]
 
