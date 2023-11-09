@@ -4,3 +4,5 @@ catboost_info
 .vscode
 venv
 data
+__pycache__
+*.ipynb*

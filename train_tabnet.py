@@ -94,9 +94,9 @@ if __name__ == "__main__":
         'gamma': config.get('gamma'),
         'n_steps': config.get('n_steps'),
         'n_a': config.get('n_a'),
-        'n_d': config.get('n_d'),
+        'n_d': config.get('n_a'),
         'n_shared': config.get('n_shared'),
-        'n_independent': config.get('n_independent')
+        'n_independent': config.get('n_shared')
         }
 
     clf = TabNetRegressor(

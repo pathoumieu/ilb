@@ -27,7 +27,7 @@ ilb: build push
 build-tabnet:
 	DOCKER_BUILDKIT=1 docker build \
 	--build-arg WANDB_API_KEY=${WANDB_API_KEY} \
-	-t train_ilb_tabnet:latest -f Dockerfile .
+	-t train_ilb_tabnet:latest -f Dockerfile_tabnet .
 
 push-tabnet:
 	docker tag train_ilb_tabnet thoumieupa/train_ilb_tabnet:latest
