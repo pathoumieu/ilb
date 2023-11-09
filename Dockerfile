@@ -12,6 +12,7 @@ ENV CONFIG_FILE_DIR=.
 ENV DATA_FILE_DIR=./data
 
 COPY --link train_ilb.py ./
+COPY --link utils.py ./
 COPY --link config.yml ./
 
 RUN pip install --upgrade pip

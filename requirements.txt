@@ -1,2 +1,1 @@
 crossval-ensemble==0.0.1
-pytorch-tabnet==4.1.0

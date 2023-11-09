@@ -1,0 +1,17 @@
+# syntax=docker/dockerfile:1.4
+
+FROM thoumieupa/train_ilb:latest
+RUN apt update && apt install gcc -y && apt install -y git
+
+WORKDIR /train_ilb
+RUN mkdir /train_ilb/data
+
+COPY --link train_tabnet.py ./
+COPY --link utils.py ./
+COPY --link config_tabnet.yml ./
+
+RUN pip install --upgrade pip
+COPY --link requirements-tabnet.txt ./
+RUN pip install -r requirements-tabnet.txt
+
+ENTRYPOINT ["python", "train_tabnet.py"]

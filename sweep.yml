@@ -1,0 +1,24 @@
+program: train_ilb.py
+method: random
+metric:
+  goal: minimize
+  name: Step
+parameters:
+  loss_function:
+    values:
+      - MAE
+    distribution: categorical
+  learning_rate:
+    distribution: log_uniform_values
+    min: 0.001
+    max: 0.05
+  eval_metric:
+    values:
+      - MAPE
+    distribution: categorical
+  iterations:
+    value: 10000
+  max_depth:
+    max: 10
+    min: 4
+    distribution: int_uniform

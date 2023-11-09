@@ -1,0 +1,17 @@
+tags:
+  - tabnet
+
+valid_size: 0.2
+
+model_params:
+  max_epochs: 2
+  patience: 1
+  batch_size: 1024
+  virtual_batch_size: 128
+  lr: 0.02
+  gamma: 1.1
+  n_steps: 1
+  n_a: 8
+  n_d: 8
+  n_shared: 1
+  n_independent: 1
