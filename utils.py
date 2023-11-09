@@ -200,6 +200,10 @@ class RealEstateModel(pl.LightningModule):
         self.log('train_mae', loss)    # Log MAE
         return loss
 
+    def predict_step(self, batch, batch_idx):
+        tabular_data, image_data, _ = batch
+        return self(tabular_data, image_data)
+
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.parameters(), lr=0.001)
         return optimizer

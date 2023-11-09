@@ -7,7 +7,7 @@ from sklearn.preprocessing import StandardScaler, OrdinalEncoder
 from torch.utils.data import DataLoader
 from torchvision import transforms
 import pytorch_lightning as pl
-from utils import CAT_COLS, CONT_COLS, RealEstateDataset, RealEstateModel, RealEstateTestDataset
+from utils import CAT_COLS, CONT_COLS, RealEstateDataset, RealEstateModel
 
 IMG_SIZE = (128, 128)
 BATCH_SIZE = 512
@@ -98,10 +98,13 @@ if __name__ == "__main__":
         transforms.ToTensor()
     ])
 
+    target_train = y_train.price.apply(np.log)
+    target_valid = y_valid.price.apply(np.log)
+
     # Create datasets and dataloaders
     dataset_train = RealEstateDataset(
         tabular_data=X_train,
-        target=y_train.price,
+        target=target_train,
         image_dir='data/reduced_images_ILB/reduced_images/train',
         transform=transform
         )
@@ -113,7 +116,7 @@ if __name__ == "__main__":
 
     dataset_valid = RealEstateDataset(
         tabular_data=X_valid,
-        target=y_valid.price,
+        target=target_train,
         image_dir='data/reduced_images_ILB/reduced_images/train',
         transform=transform
         )
@@ -123,8 +126,9 @@ if __name__ == "__main__":
         shuffle=True
         )
 
-    dataset_test = RealEstateTestDataset(
+    dataset_test = RealEstateDataset(
         tabular_data=X_test,
+        target=X_test.id_annonce,
         image_dir='data/reduced_images_ILB/reduced_images/test',
         transform=transform
         )
@@ -151,8 +155,8 @@ if __name__ == "__main__":
     # Train the model
     trainer.fit(model, dataloader_train, val_dataloaders=dataloader_valid)
 
-    # predictions = trainer.predict(model, dataloaders=dataset_test)
-    # print(predictions)
+    predictions = trainer.predict(model, dataloaders=dataloader_test)
+    print(predictions)
     # # Train
     # max_epochs = config.get('max_epochs')
     # model_params = {
