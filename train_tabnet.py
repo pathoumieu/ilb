@@ -107,8 +107,8 @@ if __name__ == "__main__":
         scheduler_fn=torch.optim.lr_scheduler.ReduceLROnPlateau,
         scheduler_params={
             "mode": 'min', # max because default eval metric for binary is AUC
-            "factor": 0.1,
-            "patience": 50
+            "factor": config.get('lr_factor'),
+            "patience": config.get('lr_patience')
             },
         **model_params
         )
