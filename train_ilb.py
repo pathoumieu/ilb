@@ -91,7 +91,8 @@ if __name__ == "__main__":
         y_train.price.values,
         X_valid=X_valid,
         y_valid=y_valid.price.values,
-        callbacks=[WandbCallback()]
+        callbacks=[WandbCallback()],
+        cat_features=CAT_COLS
     )
 
     y_pred_train = estimator.predict(X_train)
