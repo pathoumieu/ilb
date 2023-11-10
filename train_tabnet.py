@@ -84,13 +84,13 @@ if __name__ == "__main__":
 
     cat_idxs = list(range(len(CAT_COLS)))
     cat_dims = [categorical_dims[f] for f in CAT_COLS]
-    cat_emb_dim = [int(np.sqrt(categorical_dims[f])) for f in CAT_COLS]
+    cat_emb_dim = [int(categorical_dims[f]) / 2 for f in CAT_COLS]
     cols = CAT_COLS + CONT_COLS
 
     # Train
     max_epochs = config.get('max_epochs')
     model_params = {
-        'optimizer_params': {'lr': config.get('lr')},
+        'optimizer_params': {'lr': config.get('lr'), 'weight_decay': config.get('lr')},
         'gamma': config.get('gamma'),
         'n_steps': config.get('n_steps'),
         'n_a': config.get('n_a'),
@@ -104,6 +104,13 @@ if __name__ == "__main__":
         cat_emb_dim=cat_emb_dim,
         cat_idxs=cat_idxs,
         optimizer_fn=torch.optim.Adam,
+        scheduler_fn=torch.optim.lr_scheduler.OneCycleLR,
+        scheduler_params={
+            "is_batch_level":True,
+            "max_lr": config.get('max_lr'),
+            "steps_per_epoch":int(X_train.shape[0] / config.get('batch_size'))+1,
+            "epochs":max_epochs
+        }
         **model_params
         )
 
