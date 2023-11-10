@@ -8,7 +8,9 @@ import torch.nn.functional as F
 import pytorch_lightning as pl
 from pytorch_tabnet.callbacks import Callback
 from sklearn.model_selection import train_test_split
+from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import StandardScaler, OrdinalEncoder
+from sklearn_pandas import gen_features, DataFrameMapper
 
 
 CAT_COLS = [
@@ -45,12 +47,72 @@ CONT_COLS = [
 ]
 
 
-def preprocess(X_train, X_test, valid_size=0.2, random_state=0):
+def create_preprocessor(cont_cols, cat_cols):
+    cat_cols_list = [[cat_col] for cat_col in cat_cols]
+    cont_cols_list = [[cont_col] for cont_col in cont_cols]
+
+    gen_numeric = gen_features(
+        columns=cont_cols_list,
+        classes=[
+            {
+                "class": SimpleImputer,
+                "strategy": "constant",
+                "fill_value": 0.0
+            },
+            {
+                "class": StandardScaler
+            }
+        ]
+    )
+
+    gen_categories = gen_features(
+        columns=cat_cols_list,
+        classes=[
+            {
+                "class": SimpleImputer,
+                "strategy": "constant",
+                "fill_value": -1
+            },
+            {
+                "class": OrdinalEncoder,
+                "handle_unknown": 'use_encoded_value',
+                "unknown_value": -1,
+                "encoded_missing_value": -1,
+                "dtype": int
+            }
+        ]
+    )
+
+    # DataFrameMapper construction
+    preprocess_mapper = DataFrameMapper(
+        [*gen_numeric, *gen_categories],
+        input_df=True,
+        df_out=True
+    )
+
+    return preprocess_mapper
+
+
+def prepare_datasets(X_train, X_test):
+
     datasets = [X_train, X_test]
     for dataset in datasets:
         dataset['department'] = dataset['postal_code'].apply(lambda x: str(x).zfill(5)[:2])
-        dataset[CONT_COLS] = dataset[CONT_COLS].fillna(0.0).astype(float)
+        dataset[['energy_performance_value', 'ghg_value']] = dataset[
+                ['energy_performance_value', 'ghg_value']
+                ].fillna(-1.0).astype(float)
+
+        cont_cols_prep = [col for col in CONT_COLS if col not in ['energy_performance_value', 'ghg_value']]
+        dataset[cont_cols_prep] = dataset[cont_cols_prep].fillna(0.0).astype(float)
+
         dataset[CAT_COLS] = dataset[CAT_COLS].fillna('-1').astype(str)
+
+    return X_train, X_test
+
+
+def preprocess(X_train, X_test, valid_size=0.2, random_state=0):
+
+    X_train, X_test = prepare_datasets(X_train, X_test)
 
     X_train, X_valid, y_train, y_valid = train_test_split(
         X_train,
