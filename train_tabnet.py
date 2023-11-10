@@ -84,7 +84,7 @@ if __name__ == "__main__":
 
     cat_idxs = list(range(len(CAT_COLS)))
     cat_dims = [categorical_dims[f] for f in CAT_COLS]
-    cat_emb_dim = [int(categorical_dims[f]) / 2 for f in CAT_COLS]
+    cat_emb_dim = [int(categorical_dims[f] / 2) for f in CAT_COLS]
     cols = CAT_COLS + CONT_COLS
 
     # Train
@@ -106,11 +106,11 @@ if __name__ == "__main__":
         optimizer_fn=torch.optim.Adam,
         scheduler_fn=torch.optim.lr_scheduler.OneCycleLR,
         scheduler_params={
-            "is_batch_level":True,
+            "is_batch_level": True,
             "max_lr": config.get('max_lr'),
-            "steps_per_epoch":int(X_train.shape[0] / config.get('batch_size'))+1,
-            "epochs":max_epochs
-        }
+            "steps_per_epoch": int(X_train.shape[0] / config.get('batch_size')) + 1,
+            "epochs": max_epochs
+        },
         **model_params
         )
 
