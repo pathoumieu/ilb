@@ -2,14 +2,14 @@ import os, yaml, argparse
 import wandb
 import numpy as np
 import pandas as pd
-from torch.utils.data import DataLoader
 from torchvision import transforms
 import pytorch_lightning as pl
-from utils import CAT_COLS, CONT_COLS, RealEstateDataset, RealEstateModel, preprocess
+from utils import CAT_COLS, CONT_COLS, RealEstateDataset, RealEstateModel, preprocess, get_dataloader
 
 IMG_SIZE = (128, 128)
 BATCH_SIZE = 512
 MAX_EPOCHS = 1
+HIDDEN_SIZE = 8
 
 
 if __name__ == "__main__":
@@ -66,46 +66,23 @@ if __name__ == "__main__":
     target_valid = y_valid.price.apply(np.log)
 
     # Create datasets and dataloaders
-    dataset_train = RealEstateDataset(
-        tabular_data=X_train,
-        target=target_train,
-        image_dir='data/reduced_images_ILB/reduced_images/train',
-        transform=transform
+    dataloader_train = get_dataloader(
+        X_train, target_train, True, 'train',
+        transform=transform, batch_size=BATCH_SIZE
         )
-    dataloader_train = DataLoader(
-        dataset_train,
-        batch_size=BATCH_SIZE,
-        shuffle=True
+    dataloader_valid = get_dataloader(
+        X_valid, target_valid, True, 'train',
+        transform=transform, batch_size=BATCH_SIZE
         )
-
-    dataset_valid = RealEstateDataset(
-        tabular_data=X_valid,
-        target=target_train,
-        image_dir='data/reduced_images_ILB/reduced_images/train',
-        transform=transform
-        )
-    dataloader_valid = DataLoader(
-        dataset_valid,
-        batch_size=BATCH_SIZE,
-        shuffle=True
-        )
-
-    dataset_test = RealEstateDataset(
-        tabular_data=X_test,
-        target=X_test.id_annonce,
-        image_dir='data/reduced_images_ILB/reduced_images/test',
-        transform=transform
-        )
-    dataloader_test = DataLoader(
-        dataset_test,
-        batch_size=BATCH_SIZE,
-        shuffle=False
+    dataloader_test = get_dataloader(
+        X_test, X_test.id_annonce, False, 'test',
+        transform=transform, batch_size=BATCH_SIZE
         )
 
     # Create the model
     model = RealEstateModel(
         tabular_input_size=len(X_train.columns) - 1,
-        hidden_size=8
+        hidden_size=HIDDEN_SIZE
         )
 
     # Initialize a trainer
@@ -121,6 +98,8 @@ if __name__ == "__main__":
 
     predictions = trainer.predict(model, dataloaders=dataloader_test)
     print(predictions)
+
+
     # # Train
     # max_epochs = config.get('max_epochs')
     # model_params = {

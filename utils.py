@@ -4,6 +4,7 @@ from PIL import Image
 import torch
 import torch.nn as nn
 from torch.utils.data import Dataset
+from torch.utils.data import DataLoader
 import torch.nn.functional as F
 import pytorch_lightning as pl
 from pytorch_tabnet.callbacks import Callback
@@ -326,3 +327,20 @@ class InputLogger(pl.LightningModule):
     def validation_step(self, batch, batch_idx):
         # Log the input to the validation step
         self.log("valid_input", batch["x"])
+
+
+def get_dataloader(X, y, shuffle, dir, transform, batch_size):
+        dataset = RealEstateDataset(
+            tabular_data=X,
+            target=y,
+            image_dir=f'data/reduced_images_ILB/reduced_images/{dir}',
+            transform=transform
+            )
+        dataloader = (
+            DataLoader(
+                dataset,
+                batch_size=batch_size,
+                shuffle=shuffle
+                )
+            )
+        return dataloader
