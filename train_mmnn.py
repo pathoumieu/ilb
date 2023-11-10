@@ -2,12 +2,10 @@ import os, yaml, argparse
 import wandb
 import numpy as np
 import pandas as pd
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler, OrdinalEncoder
 from torch.utils.data import DataLoader
 from torchvision import transforms
 import pytorch_lightning as pl
-from utils import CAT_COLS, CONT_COLS, RealEstateDataset, RealEstateModel
+from utils import CAT_COLS, CONT_COLS, RealEstateDataset, RealEstateModel, preprocess
 
 IMG_SIZE = (128, 128)
 BATCH_SIZE = 512
@@ -54,41 +52,7 @@ if __name__ == "__main__":
     y_random = pd.read_csv(f"{dfd}/y_random_MhJDhKK.csv")
 
     # Preprocess
-    datasets = [X_train, X_test]
-    for dataset in datasets:
-        dataset['department'] = X_train.postal_code.apply(lambda x: str(x).zfill(5)[:2])
-        dataset[CONT_COLS] = dataset[CONT_COLS].fillna(0.0).astype(float)
-        dataset[CAT_COLS] = dataset[CAT_COLS].fillna('-1').astype(str)
-
-    valid_size = 0.2
-    X_train, X_valid, y_train, y_valid = train_test_split(X_train, y_train, test_size=valid_size, random_state=0)
-
-    categorical_dims =  {}
-    for cat_col in CAT_COLS:
-
-        unknown = X_train[cat_col].nunique()
-
-        oe = OrdinalEncoder(
-            handle_unknown='use_encoded_value',
-            unknown_value=unknown,
-            encoded_missing_value=unknown,
-            dtype=int
-        )
-
-        X_train[cat_col] = oe.fit_transform(X_train[cat_col].values.reshape(-1, 1))
-        X_valid[cat_col] = oe.transform(X_valid[cat_col].values.reshape(-1, 1))
-        X_test[cat_col] = oe.transform(X_test[cat_col].values.reshape(-1, 1))
-        categorical_dims[cat_col] = len(oe.categories_[0]) + 1
-
-    for cont_col in CONT_COLS:
-        std = StandardScaler()
-        X_train[cont_col] = std.fit_transform(X_train[cont_col].values.reshape(-1, 1))
-        X_valid[cont_col] = std.transform(X_valid[cont_col].values.reshape(-1, 1))
-        X_test[cont_col] = std.transform(X_test[cont_col].values.reshape(-1, 1))
-
-    cat_idxs = list(range(len(CAT_COLS)))
-    cat_dims = [categorical_dims[f] for f in CAT_COLS]
-    cat_emb_dim = [int(np.sqrt(categorical_dims[f])) for f in CAT_COLS]
+    X_train, y_train, X_valid, y_valid, X_test, _ = preprocess(X_train, X_test, valid_size=0.2)
     cols = CAT_COLS + CONT_COLS
 
     # Assuming you have X_train, y_train, and the image folder directory

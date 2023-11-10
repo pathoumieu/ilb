@@ -7,6 +7,8 @@ from torch.utils.data import Dataset
 import torch.nn.functional as F
 import pytorch_lightning as pl
 from pytorch_tabnet.callbacks import Callback
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler, OrdinalEncoder
 
 
 CAT_COLS = [
@@ -41,6 +43,46 @@ CONT_COLS = [
     'nb_photos',
     'nb_terraces',
 ]
+
+
+def preprocess(X_train, X_test, valid_size=0.2, random_state=0):
+    datasets = [X_train, X_test]
+    for dataset in datasets:
+        dataset['department'] = dataset['postal_code'].apply(lambda x: str(x).zfill(5)[:2])
+        dataset[CONT_COLS] = dataset[CONT_COLS].fillna(0.0).astype(float)
+        dataset[CAT_COLS] = dataset[CAT_COLS].fillna('-1').astype(str)
+
+    X_train, X_valid, y_train, y_valid = train_test_split(
+        X_train,
+        y_train,
+        test_size=valid_size,
+        random_state=random_state
+        )
+
+    categorical_dims =  {}
+    for cat_col in CAT_COLS:
+
+        unknown = X_train[cat_col].nunique()
+
+        oe = OrdinalEncoder(
+            handle_unknown='use_encoded_value',
+            unknown_value=unknown,
+            encoded_missing_value=unknown,
+            dtype=int
+        )
+
+        X_train[cat_col] = oe.fit_transform(X_train[cat_col].values.reshape(-1, 1))
+        X_valid[cat_col] = oe.transform(X_valid[cat_col].values.reshape(-1, 1))
+        X_test[cat_col] = oe.transform(X_test[cat_col].values.reshape(-1, 1))
+        categorical_dims[cat_col] = len(oe.categories_[0]) + 1
+
+    for cont_col in CONT_COLS:
+        std = StandardScaler()
+        X_train[cont_col] = std.fit_transform(X_train[cont_col].values.reshape(-1, 1))
+        X_valid[cont_col] = std.transform(X_valid[cont_col].values.reshape(-1, 1))
+        X_test[cont_col] = std.transform(X_test[cont_col].values.reshape(-1, 1))
+
+    return X_train, y_train, X_valid, y_valid, X_test, categorical_dims
 
 
 class WandbCallback(Callback):
@@ -109,6 +151,7 @@ class RealEstateDataset(Dataset):
         targets = torch.tensor(targets, dtype=torch.float)
 
         return tabular_features, images, targets
+
 
 class RealEstateTestDataset(Dataset):
     def __init__(self, tabular_data, image_dir, transform=None, max_images=6):

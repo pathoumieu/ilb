@@ -133,7 +133,7 @@ if __name__ == "__main__":
 
     datasets = [X_train, X_test]
     for dataset in datasets:
-        dataset['department'] = X_train.postal_code.apply(lambda x: str(x).zfill(5)[:2])
+        dataset['department'] = dataset.postal_code.apply(lambda x: str(x).zfill(5)[:2])
         dataset[CONT_COLS] = dataset[CONT_COLS].astype(float)
         dataset[CAT_COLS] = dataset[CAT_COLS].astype(str)
 
