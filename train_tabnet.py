@@ -84,7 +84,7 @@ if __name__ == "__main__":
 
     cat_idxs = list(range(len(CAT_COLS)))
     cat_dims = [categorical_dims[f] for f in CAT_COLS]
-    cat_emb_dim = [int(categorical_dims[f] / 2) for f in CAT_COLS]
+    cat_emb_dim = [max(1, int(categorical_dims[f] / config.get('embed_scale'))) for f in CAT_COLS]
     cols = CAT_COLS + CONT_COLS
 
     # Train
@@ -104,13 +104,12 @@ if __name__ == "__main__":
         cat_emb_dim=cat_emb_dim,
         cat_idxs=cat_idxs,
         optimizer_fn=torch.optim.Adam,
-        scheduler_fn=torch.optim.lr_scheduler.OneCycleLR,
+        scheduler_fn=torch.optim.lr_scheduler.ReduceLROnPlateau,
         scheduler_params={
-            "is_batch_level": True,
-            "max_lr": config.get('max_lr'),
-            "steps_per_epoch": int(X_train.shape[0] / config.get('batch_size')) + 1,
-            "epochs": max_epochs
-        },
+            "mode": 'min', # max because default eval metric for binary is AUC
+            "factor": 0.1,
+            "patience": 50
+            },
         **model_params
         )
 

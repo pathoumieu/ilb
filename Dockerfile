@@ -11,13 +11,13 @@ ENV WANDB_API_KEY=${WANDB_API_KEY}
 ENV CONFIG_FILE_DIR=.
 ENV DATA_FILE_DIR=./data
 
-COPY --link train_ilb.py ./
-COPY --link utils.py ./
-COPY --link config.yml ./
-
 RUN pip install --upgrade pip
 COPY --link requirements.txt ./
 RUN pip install -r requirements.txt
+
+COPY --link train_ilb.py ./
+COPY --link utils.py ./
+COPY --link config.yml ./
 
 COPY --link data/X_train_J01Z4CN.csv ./data/
 COPY --link data/y_train_OXxrJt1.csv ./data/

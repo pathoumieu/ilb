@@ -3,12 +3,12 @@
 FROM thoumieupa/train_ilb:latest
 RUN apt update && apt install gcc -y && apt install -y git
 
-COPY --link train_tabnet.py ./
-COPY --link utils.py ./
-COPY --link config_tabnet.yml ./
-
 RUN pip install --upgrade pip
 COPY --link requirements-tabnet.txt ./
 RUN pip install -r requirements-tabnet.txt
+
+COPY --link train_tabnet.py ./
+COPY --link utils.py ./
+COPY --link config_tabnet.yml ./
 
 ENTRYPOINT ["python", "train_tabnet.py"]
