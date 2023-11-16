@@ -71,7 +71,8 @@ if __name__ == "__main__":
         'random_seed': config.get('random_seed'),
         'use_best_model': True,
         'od_type': None,
-        'verbose': config.get('verbose')
+        'verbose': config.get('verbose'),
+        'thread_count': 8
         }
 
     regressor = CatBoostRegressor(**model_params)

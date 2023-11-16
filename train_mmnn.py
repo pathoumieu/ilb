@@ -4,7 +4,8 @@ import numpy as np
 import pandas as pd
 from torchvision import transforms
 import pytorch_lightning as pl
-from utils import CAT_COLS, CONT_COLS, RealEstateDataset, RealEstateModel, preprocess, get_dataloader
+from utils import CAT_COLS, CONT_COLS, preprocess
+from utils_torch import RealEstateModel, get_dataloader
 
 IMG_SIZE = (128, 128)
 BATCH_SIZE = 512

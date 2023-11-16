@@ -4,10 +4,9 @@ import numpy as np
 import pandas as pd
 import torch
 from pytorch_tabnet.tab_model import TabNetRegressor
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler, OrdinalEncoder
 from sklearn.metrics import mean_absolute_percentage_error as MAPE
-from utils import WandbCallback, CAT_COLS, CONT_COLS, preprocess
+from utils import CAT_COLS, CONT_COLS, preprocess
+from utils_torch import WandbCallback
 
 
 if __name__ == "__main__":
