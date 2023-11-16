@@ -2,6 +2,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import StandardScaler, OrdinalEncoder
 from sklearn_pandas import gen_features, DataFrameMapper
+from sklearn.preprocessing import QuantileTransformer
 
 
 CAT_COLS = [
@@ -84,26 +85,49 @@ def create_preprocessor(cont_cols, cat_cols):
     return preprocess_mapper
 
 
-def prepare_datasets(X_train, X_test):
+def prepare_datasets(X_train, X_test, quantile_transform=None, n_quantiles=None):
+
+
+    if quantile_transform is not None:
+        quantile = QuantileTransformer(n_quantiles=n_quantiles, output_distribution=quantile_transform)
+        cols_to_transform = ['size', 'land_size', 'energy_performance_value', 'ghg_value']
+
+        X_train[cols_to_transform] = quantile.fit_transform(X_train[cols_to_transform])
+        X_train[cols_to_transform] = X_train[cols_to_transform].fillna(
+            X_train[cols_to_transform].min() - X_train[cols_to_transform].std()
+            )
+        X_test[cols_to_transform] = quantile.transform(X_test[cols_to_transform])
+        X_test[cols_to_transform] = X_test[cols_to_transform].fillna(
+            X_train[cols_to_transform].min() - X_train[cols_to_transform].std()
+            )
+
 
     datasets = [X_train, X_test]
     for dataset in datasets:
         dataset['department'] = dataset['postal_code'].apply(lambda x: str(x).zfill(5)[:2])
+
+        dataset.loc[
+            dataset.nb_rooms.isnull() & dataset.nb_bedrooms.notnull(),
+            'nb_rooms'
+            ] = dataset.loc[
+                dataset.nb_rooms.isnull() & dataset.nb_bedrooms.notnull(),
+                'nb_bedrooms'
+                ] + 1
+
         dataset[['energy_performance_value', 'ghg_value']] = dataset[
                 ['energy_performance_value', 'ghg_value']
                 ].fillna(-1.0).astype(float)
 
-        cont_cols_prep = [col for col in CONT_COLS if col not in ['energy_performance_value', 'ghg_value']]
-        dataset[cont_cols_prep] = dataset[cont_cols_prep].fillna(0.0).astype(float)
+        dataset[CONT_COLS] = dataset[CONT_COLS].fillna(0.0).astype(float)
 
         dataset[CAT_COLS] = dataset[CAT_COLS].fillna('-1').astype(str)
 
     return X_train, X_test
 
 
-def preprocess(X_train, y_train, X_test, valid_size=0.2, random_state=0):
+def preprocess(X_train, y_train, X_test, valid_size=0.2, random_state=0, quantile_transform=None, n_quantiles=None):
 
-    X_train, X_test = prepare_datasets(X_train, X_test)
+    X_train, X_test = prepare_datasets(X_train, X_test, quantile_transform=quantile_transform, n_quantiles=n_quantiles)
 
     X_train, X_valid, y_train, y_valid = train_test_split(
         X_train,

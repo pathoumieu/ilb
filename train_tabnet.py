@@ -26,7 +26,8 @@ if __name__ == "__main__":
         # scalar values to Python the dictionary format
         default_config = yaml.load(file_, Loader=yaml.FullLoader)
 
-    wandb_config = {'valid_size': default_config['valid_size']}
+    wandb_config = {key: value for key, value in default_config.items() if key != 'model_params'}
+
     wandb_config.update(default_config['model_params'])
 
     wandb.login()
@@ -53,8 +54,11 @@ if __name__ == "__main__":
         X_train,
         y_train,
         X_test,
-        valid_size=config.get('valid_size')
+        valid_size=config.get('valid_size'),
+        quantile_transform=config.get('quantile_transform'),
+        n_quantiles=config.get('n_quantiles')
         )
+    print(config.get('n_quantiles'))
     cat_idxs = list(range(len(CAT_COLS)))
     cat_dims = [categorical_dims[f] for f in CAT_COLS]
     cat_emb_dim = [max(1, int(categorical_dims[f] / config.get('embed_scale'))) for f in CAT_COLS]
