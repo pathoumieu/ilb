@@ -53,7 +53,7 @@ if __name__ == "__main__":
     y_random = pd.read_csv(f"{dfd}/y_random_MhJDhKK.csv")
 
     # Preprocess
-    X_train, y_train, X_valid, y_valid, X_test, _ = preprocess(X_train, X_test, valid_size=0.2)
+    X_train, y_train, X_valid, y_valid, X_test, _ = preprocess(X_train, y_train, X_test, valid_size=0.2)
     cols = CAT_COLS + CONT_COLS
 
     # Assuming you have X_train, y_train, and the image folder directory

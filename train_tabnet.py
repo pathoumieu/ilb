@@ -51,6 +51,7 @@ if __name__ == "__main__":
     # Preprocess
     X_train, y_train, X_valid, y_valid, X_test, categorical_dims = preprocess(
         X_train,
+        y_train,
         X_test,
         valid_size=config.get('valid_size')
         )

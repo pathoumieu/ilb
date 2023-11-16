@@ -101,7 +101,7 @@ def prepare_datasets(X_train, X_test):
     return X_train, X_test
 
 
-def preprocess(X_train, X_test, valid_size=0.2, random_state=0):
+def preprocess(X_train, y_train, X_test, valid_size=0.2, random_state=0):
 
     X_train, X_test = prepare_datasets(X_train, X_test)
 
