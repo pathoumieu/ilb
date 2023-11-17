@@ -85,7 +85,7 @@ def create_preprocessor(cont_cols, cat_cols):
     return preprocess_mapper
 
 
-def prepare_datasets(X_train, X_test, quantile_transform=None, n_quantiles=None):
+def prepare_datasets(X_train, X_test, quantile_transform=None, n_quantiles=None, clip_rooms=None):
 
 
     if quantile_transform is not None:
@@ -101,6 +101,9 @@ def prepare_datasets(X_train, X_test, quantile_transform=None, n_quantiles=None)
             X_train[cols_to_transform].min() - X_train[cols_to_transform].std()
             )
 
+    if clip_rooms is not None:
+        X_train[['nb_rooms', 'nb_bedrooms']] = X_train[['nb_rooms', 'nb_bedrooms']].clip(clip_rooms)
+        X_test[['nb_rooms', 'nb_bedrooms']] = X_test[['nb_rooms', 'nb_bedrooms']].clip(clip_rooms)
 
     datasets = [X_train, X_test]
     for dataset in datasets:
@@ -125,9 +128,24 @@ def prepare_datasets(X_train, X_test, quantile_transform=None, n_quantiles=None)
     return X_train, X_test
 
 
-def preprocess(X_train, y_train, X_test, valid_size=0.2, random_state=0, quantile_transform=None, n_quantiles=None):
+def preprocess(
+        X_train,
+        y_train,
+        X_test,
+        valid_size=0.2,
+        random_state=0,
+        quantile_transform=None,
+        n_quantiles=None,
+        clip_rooms=None,
+        ):
 
-    X_train, X_test = prepare_datasets(X_train, X_test, quantile_transform=quantile_transform, n_quantiles=n_quantiles)
+    X_train, X_test = prepare_datasets(
+        X_train,
+        X_test,
+        quantile_transform=quantile_transform,
+        n_quantiles=n_quantiles,
+        clip_rooms=clip_rooms,
+        )
 
     X_train, X_valid, y_train, y_valid = train_test_split(
         X_train,

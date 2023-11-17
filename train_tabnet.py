@@ -56,7 +56,8 @@ if __name__ == "__main__":
         X_test,
         valid_size=config.get('valid_size'),
         quantile_transform=config.get('quantile_transform'),
-        n_quantiles=config.get('n_quantiles')
+        n_quantiles=config.get('n_quantiles'),
+        clip_rooms=config.get('clip_rooms')
         )
     print(config.get('n_quantiles'))
     cat_idxs = list(range(len(CAT_COLS)))

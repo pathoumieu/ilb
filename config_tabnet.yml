@@ -5,6 +5,7 @@ valid_size: 0.2
 
 quantile_transform: 'normal'
 n_quantiles: 100
+clip_rooms: 15
 
 model_params:
   max_epochs: 2
