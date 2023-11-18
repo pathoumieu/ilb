@@ -1,4 +1,4 @@
-import os, yaml, argparse
+import os, yaml, argparse, sys
 import wandb
 import numpy as np
 import pandas as pd
@@ -10,12 +10,14 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_absolute_percentage_error as MAPE
 from crossval_ensemble.custom_pipeline import CustomRegressionPipeline
 from crossval_ensemble.custom_transformed_target_regressor import CustomTransformedTargetRegressor
+
+sys.path.append(os.getcwd())
 from utils import create_preprocessor, prepare_datasets, CAT_COLS, CONT_COLS
 
 
 if __name__ == "__main__":
 
-    cfd = os.environ.get("CONFIG_FILE_DIR", os.getcwd())
+    cfd = os.environ.get("CONFIG_FILE_DIR", f"{os.getcwd()}/pipe_catboost")
     dfd = os.environ.get("DATA_FILE_DIR", f"{os.getcwd()}/data")
 
     parser = argparse.ArgumentParser(description='')

@@ -5,14 +5,14 @@ include .env
 build:
 	DOCKER_BUILDKIT=1 docker build \
 	--build-arg WANDB_API_KEY=${WANDB_API_KEY} \
-	-t train_ilb:latest -f Dockerfile .
+	-t train_ilb:latest -f pipe_catboost/Dockerfile .
 
 push:
 	docker tag train_ilb thoumieupa/train_ilb:latest
 	docker push thoumieupa/train_ilb:latest
 
 run:
-	docker run --volume $(PWD)/:/train_ilb thoumieupa/train_ilb:latest
+	docker run thoumieupa/train_ilb:latest
 
 job:
 	docker run \
@@ -27,14 +27,14 @@ ilb: build push
 build-tabnet:
 	DOCKER_BUILDKIT=1 docker build \
 	--build-arg WANDB_API_KEY=${WANDB_API_KEY} \
-	-t train_ilb_tabnet:latest -f Dockerfile_tabnet .
+	-t train_ilb_tabnet:latest -f pipe_catboost/Dockerfile .
 
 push-tabnet:
 	docker tag train_ilb_tabnet thoumieupa/train_ilb_tabnet:latest
 	docker push thoumieupa/train_ilb_tabnet:latest
 
 run-tabnet:
-	docker run --volume $(PWD)/:/train_ilb thoumieupa/train_ilb_tabnet:latest
+	docker run thoumieupa/train_ilb_tabnet:latest
 
 job-tabnet:
 	docker run \

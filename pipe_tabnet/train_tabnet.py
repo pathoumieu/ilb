@@ -1,21 +1,23 @@
-import os, yaml, argparse
+import os, yaml, argparse, sys
 import wandb
 import numpy as np
 import pandas as pd
 import torch
 from pytorch_tabnet.tab_model import TabNetRegressor
 from sklearn.metrics import mean_absolute_percentage_error as MAPE
+
+sys.path.append(os.getcwd())
 from utils import CAT_COLS, CONT_COLS, preprocess
 from utils_torch import WandbCallback
 
 
 if __name__ == "__main__":
 
-    cfd = os.environ.get("CONFIG_FILE_DIR", os.getcwd())
+    cfd = os.environ.get("CONFIG_FILE_DIR", f"{os.getcwd()}/pipe_tabnet")
     dfd = os.environ.get("DATA_FILE_DIR", f"{os.getcwd()}/data")
 
     parser = argparse.ArgumentParser(description='')
-    parser.add_argument('--config-path', type=str, help='', default=f'{cfd}/config_tabnet.yml')
+    parser.add_argument('--config-path', type=str, help='', default=f'{cfd}/config.yml')
     parser.add_argument('--run-name', type=str, help='', default=None)
 
     args = vars(parser.parse_args())

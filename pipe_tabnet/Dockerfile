@@ -4,7 +4,7 @@ FROM thoumieupa/train_ilb:latest
 RUN apt update && apt install gcc -y && apt install -y git
 
 RUN pip install --upgrade pip
-COPY --link requirements-tabnet.txt ./
+COPY --link pipe_tabnet/requirements.txt ./
 RUN pip install -r requirements-tabnet.txt
 
 COPY --link train_tabnet.py ./

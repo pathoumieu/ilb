@@ -4,7 +4,7 @@ FROM thoumieupa/train_base:latest
 RUN apt update && apt install gcc -y && apt install -y git
 
 RUN pip install --upgrade pip
-COPY --link requirements.txt ./
+COPY --link pipe_catboost/requirements.txt ./
 RUN pip install -r requirements.txt
 
 WORKDIR /train_ilb
@@ -16,9 +16,9 @@ ENV CONFIG_FILE_DIR=.
 ENV DATA_FILE_DIR=./data
 
 
-COPY --link train_ilb.py ./
+COPY --link pipe_catboost/train_ilb.py ./
 COPY --link utils.py ./
-COPY --link config.yml ./
+COPY --link pipe_catboost/config.yml ./
 
 COPY --link data/X_train_J01Z4CN.csv ./data/
 COPY --link data/y_train_OXxrJt1.csv ./data/
