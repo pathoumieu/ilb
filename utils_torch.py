@@ -168,6 +168,7 @@ class RealEstateModel(pl.LightningModule):
         # Calculate Mean Absolute Error (MAE)
         loss = nn.L1Loss()(outputs, targets)
         self.log('train_mae', loss, prog_bar=True)    # Log MAE
+        wandb.log({'train_mae': loss})
         return loss
 
     def validation_step(self, batch, batch_idx):
@@ -175,6 +176,7 @@ class RealEstateModel(pl.LightningModule):
         outputs = self(tabular_data, image_data)
         loss = nn.L1Loss()(outputs, targets)
         self.log('valid_mae', loss, prog_bar=True, on_step=False, on_epoch=True)    # Log MAE
+        wandb.log({'valid_mae': loss})
 
     def predict_step(self, batch, batch_idx):
         tabular_data, image_data, _ = batch
@@ -183,20 +185,6 @@ class RealEstateModel(pl.LightningModule):
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.parameters(), lr=0.001)
         return optimizer
-
-
-class InputLogger(pl.LightningModule):
-
-    def __init__(self):
-        super().__init__()
-
-    def training_step(self, batch, batch_idx):
-        # Log the input to the training step
-        self.log("train_input", batch["x"])
-
-    def validation_step(self, batch, batch_idx):
-        # Log the input to the validation step
-        self.log("valid_input", batch["x"])
 
 
 def get_dataloader(X, y, shuffle, dir, transform, batch_size):

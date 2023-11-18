@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 from torchvision import transforms
 import pytorch_lightning as pl
+from sklearn.metrics import mean_absolute_percentage_error as MAPE
 
 sys.path.append(os.getcwd())
 from utils import CAT_COLS, CONT_COLS, preprocess
@@ -128,11 +129,12 @@ if __name__ == "__main__":
     trainer.fit(model, dataloader_train, val_dataloaders=dataloader_valid)
 
     predictions = trainer.predict(model, dataloaders=dataloader_test)
+    y_pred_valid = np.exp(np.concatenate(trainer.predict(model, dataloaders=dataloader_valid))).flatten()
+
     y_random['price'] = np.exp(np.concatenate(predictions)).flatten()
     y_random.to_csv(f'{dfd}/submission.csv', index=False)
 
     # y_pred_train = np.exp(clf.predict(X_train[cols].values))
-    # y_pred_valid = np.exp(clf.predict(X_valid[cols].values))
 
     artifact = wandb.Artifact(name="submission", type="test predictions")
     artifact.add_file(local_path=f'{dfd}/submission.csv')
@@ -144,11 +146,11 @@ if __name__ == "__main__":
     # artifact.add_file(local_path=f'{dfd}/tabnet_model.pt.zip')
     # run.log_artifact(artifact)
 
-    # run.log(
-    #     {
-    #         'MAPE_train': MAPE(y_train.price, y_pred_train),
-    #         'MAPE_valid': MAPE(y_valid.price, y_pred_valid)
-    #     }
-    # )
+    run.log(
+        {
+            # 'MAPE_train': MAPE(y_train.price, y_pred_train),
+            'MAPE_valid': MAPE(y_valid.price, y_pred_valid)
+        }
+    )
 
     run.finish()
