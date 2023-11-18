@@ -61,7 +61,6 @@ if __name__ == "__main__":
         n_quantiles=config.get('n_quantiles'),
         clip_rooms=config.get('clip_rooms')
         )
-    print(config.get('n_quantiles'))
     cat_idxs = list(range(len(CAT_COLS)))
     cat_dims = [categorical_dims[f] for f in CAT_COLS]
     cat_emb_dim = [max(1, int(categorical_dims[f] / config.get('embed_scale'))) for f in CAT_COLS]

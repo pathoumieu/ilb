@@ -1,15 +1,15 @@
 # syntax=docker/dockerfile:1.4
 
-FROM thoumieupa/train_ilb:latest
+FROM thoumieupa/train_ilb_tabnet:latest
 RUN apt update && apt install gcc -y && apt install -y git
 
 RUN pip install --upgrade pip
-COPY --link pipe_tabnet/requirements.txt ./
+COPY --link pipe_mmnn/requirements.txt ./
 RUN pip install -r requirements.txt
 
-COPY --link pipe_tabnet/train_tabnet.py ./
+COPY --link pipe_mmnn/train_mmnn.py ./
 COPY --link utils.py ./
 COPY --link utils_torch.py ./
-COPY --link pipe_tabnet/config.yml ./
+COPY --link pipe_mmnn/config.yml ./
 
-ENTRYPOINT ["python", "train_tabnet.py"]
+ENTRYPOINT ["python", "train_mmnn.py"]
