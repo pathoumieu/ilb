@@ -102,6 +102,7 @@ if __name__ == "__main__":
     # Create the model
     model = RealEstateModel(
         tabular_input_size=len(X_train.columns) - 1,
+        im_size=IMG_SIZE,
         hidden_size=HIDDEN_SIZE
         )
 

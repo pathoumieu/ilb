@@ -114,9 +114,11 @@ class RealEstateTestDataset(Dataset):
 
 
 class RealEstateModel(pl.LightningModule):
-    def __init__(self, tabular_input_size, hidden_size=64, max_images=6):
+    def __init__(self, tabular_input_size, im_size, hidden_size=64, max_images=6):
         super(RealEstateModel, self).__init__()
         self.max_images = max_images
+        self.im_size = im_size
+        self.hidden_size = hidden_size
 
         # Tabular model
         self.tabular_model = nn.Sequential(
@@ -142,14 +144,15 @@ class RealEstateModel(pl.LightningModule):
 
     def forward(self, tabular_data, image_data):
         tabular_output = self.tabular_model(tabular_data)
-        # Process image data (multiple images)
-        image_output = []
-        for i in range(6):
-            single_image_output = self.image_model(image_data[:, i])  # Process each image
-            image_output.append(single_image_output)
 
-        # Concatenate the outputs of all processed images
-        image_output = torch.cat(image_output, dim=1)
+        # Reshape image_data to (batch_size * max_images, 3, 64, 64)
+        image_data = image_data.view(-1, 3, *self.im_size)
+
+        # Process all images in one pass
+        image_output = self.image_model(image_data)
+
+        # Reshape image_output to (batch_size, max_images * hidden_size)
+        image_output = image_output.view(-1, self.max_images * self.hidden_size)
 
         # Combine tabular and image outputs
         combined = torch.cat((tabular_output, image_output), dim=1)
