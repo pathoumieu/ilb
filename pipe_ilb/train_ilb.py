@@ -17,7 +17,7 @@ from utils import create_preprocessor, prepare_datasets, CAT_COLS, CONT_COLS
 
 if __name__ == "__main__":
 
-    cfd = os.environ.get("CONFIG_FILE_DIR", f"{os.getcwd()}/pipe_catboost")
+    cfd = os.environ.get("CONFIG_FILE_DIR", f"{os.getcwd()}/pipe_ilb")
     dfd = os.environ.get("DATA_FILE_DIR", f"{os.getcwd()}/data")
 
     parser = argparse.ArgumentParser(description='')
