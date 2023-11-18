@@ -9,6 +9,8 @@ import torch.nn.functional as F
 import pytorch_lightning as pl
 from pytorch_tabnet.callbacks import Callback
 
+NUM_WORKERS = 8
+
 
 class WandbCallback(Callback):
     """Callback that records events into a `History` object.
@@ -162,11 +164,14 @@ class RealEstateModel(pl.LightningModule):
         # loss = nn.MSELoss()(outputs, targets)
         # Calculate Mean Absolute Error (MAE)
         loss = nn.L1Loss()(outputs, targets)
-
-        # Log both loss and MAE
-        # self.log('train_loss', loss)  # Log loss
-        self.log('train_mae', loss)    # Log MAE
+        self.log('train_mae', loss, prog_bar=True)    # Log MAE
         return loss
+
+    def validation_step(self, batch, batch_idx):
+        tabular_data, image_data, targets = batch
+        outputs = self(tabular_data, image_data)
+        loss = nn.L1Loss()(outputs, targets)
+        self.log('valid_mae', loss, prog_bar=True, on_step=False, on_epoch=True)    # Log MAE
 
     def predict_step(self, batch, batch_idx):
         tabular_data, image_data, _ = batch
@@ -202,7 +207,8 @@ def get_dataloader(X, y, shuffle, dir, transform, batch_size):
             DataLoader(
                 dataset,
                 batch_size=batch_size,
-                shuffle=shuffle
+                shuffle=shuffle,
+                num_workers=NUM_WORKERS
                 )
             )
         return dataloader

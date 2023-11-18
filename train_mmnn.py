@@ -8,9 +8,11 @@ from utils import CAT_COLS, CONT_COLS, preprocess
 from utils_torch import RealEstateModel, get_dataloader
 
 IMG_SIZE = (128, 128)
-BATCH_SIZE = 512
+BATCH_SIZE = 128
+PREDICT_BATCH_SIZE = 256
 MAX_EPOCHS = 1
 HIDDEN_SIZE = 8
+DEBUG = True
 
 
 if __name__ == "__main__":
@@ -47,10 +49,16 @@ if __name__ == "__main__":
     # config = run.config
 
     # Load the tabular data
-    X_train = pd.read_csv(f"{dfd}/X_train_J01Z4CN.csv").sample(frac=0.1)
-    y_train = pd.read_csv(f"{dfd}/y_train_OXxrJt1.csv").iloc[X_train.index]
-    X_test = pd.read_csv(f"{dfd}/X_test_BEhvxAN.csv")
-    y_random = pd.read_csv(f"{dfd}/y_random_MhJDhKK.csv")
+    if DEBUG:
+        X_train = pd.read_csv(f"{dfd}/X_train_J01Z4CN.csv").sample(frac=0.1)
+        y_train = pd.read_csv(f"{dfd}/y_train_OXxrJt1.csv").iloc[X_train.index]
+        X_test = pd.read_csv(f"{dfd}/X_test_BEhvxAN.csv").sample(frac=0.1)
+        y_random = pd.read_csv(f"{dfd}/y_random_MhJDhKK.csv").iloc[X_test.index]
+    else:
+        X_train = pd.read_csv(f"{dfd}/X_train_J01Z4CN.csv")
+        y_train = pd.read_csv(f"{dfd}/y_train_OXxrJt1.csv")
+        X_test = pd.read_csv(f"{dfd}/X_test_BEhvxAN.csv")
+        y_random = pd.read_csv(f"{dfd}/y_random_MhJDhKK.csv")
 
     # Preprocess
     X_train, y_train, X_valid, y_valid, X_test, _ = preprocess(X_train, y_train, X_test, valid_size=0.2)
@@ -72,12 +80,12 @@ if __name__ == "__main__":
         transform=transform, batch_size=BATCH_SIZE
         )
     dataloader_valid = get_dataloader(
-        X_valid, target_valid, True, 'train',
+        X_valid, target_valid, False, 'train',
         transform=transform, batch_size=BATCH_SIZE
         )
     dataloader_test = get_dataloader(
         X_test, X_test.id_annonce, False, 'test',
-        transform=transform, batch_size=BATCH_SIZE
+        transform=transform, batch_size=PREDICT_BATCH_SIZE
         )
 
     # Create the model
@@ -95,13 +103,6 @@ if __name__ == "__main__":
     )
 
     # Train the model
-    trainer.fit(model, dataloader_train, val_dataloaders=dataloader_valid)
-
-    predictions = trainer.predict(model, dataloaders=dataloader_test)
-    print(predictions)
-
-
-    # # Train
     # max_epochs = config.get('max_epochs')
     # model_params = {
     #     'optimizer_params': {'lr': config.get('lr')},
@@ -112,38 +113,15 @@ if __name__ == "__main__":
     #     'n_shared': config.get('n_shared'),
     #     'n_independent': config.get('n_shared')
     #     }
+    trainer.fit(model, dataloader_train, val_dataloaders=dataloader_valid)
 
-    # clf = TabNetRegressor(
-    #     cat_dims=cat_dims,
-    #     cat_emb_dim=cat_emb_dim,
-    #     cat_idxs=cat_idxs,
-    #     optimizer_fn=torch.optim.Adam,
-    #     **model_params
-    #     )
-
-    # target_train = np.log(y_train.price.values.reshape(-1, 1))
-    # target_valid = np.log(y_valid.price.values.reshape(-1, 1))
-
-    # clf.fit(
-    #     X_train=X_train[cols].values, y_train=target_train,
-    #     eval_set=[(X_train[cols].values, target_train), (X_valid[cols].values, target_valid)],
-    #     eval_name=['train', 'valid'],
-    #     eval_metric=['mae'],
-    #     max_epochs=config.get('max_epochs'),
-    #     patience=config.get('patience'),
-    #     batch_size=config.get('batch_size'),
-    #     virtual_batch_size=config.get('virtual_batch_size'),
-    #     num_workers=0,
-    #     drop_last=False,
-    #     callbacks=[WandbCallback()]
-    # )
+    predictions = trainer.predict(model, dataloaders=dataloader_test)
+    y_random['price'] = np.exp(np.concatenate(predictions)).flatten()
+    y_random.to_csv(f'{dfd}/submission.csv', index=False)
 
     # y_pred_train = np.exp(clf.predict(X_train[cols].values))
     # y_pred_valid = np.exp(clf.predict(X_valid[cols].values))
-    # y_pred_test = np.exp(clf.predict(X_test[cols].values))
 
-    # y_random['price'] = y_pred_test
-    # y_random.to_csv(f'{dfd}/submission.csv', index=False)
     # artifact = wandb.Artifact(name="submission", type="test predictions")
     # artifact.add_file(local_path=f'{dfd}/submission.csv')
     # run.log_artifact(artifact)
