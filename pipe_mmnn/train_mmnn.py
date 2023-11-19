@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 from torchvision import transforms
 import pytorch_lightning as pl
+from pytorch_lightning.loggers import WandbLogger
 from sklearn.metrics import mean_absolute_percentage_error as MAPE
 
 sys.path.append(os.getcwd())
@@ -108,11 +109,13 @@ if __name__ == "__main__":
         )
 
     # Initialize a trainer
+    wandb_logger = WandbLogger(log_model="all")
     trainer = pl.Trainer(
         max_epochs=MAX_EPOCHS,
         log_every_n_steps=1,
         enable_progress_bar=True,
-        enable_model_summary=True
+        enable_model_summary=True,
+        logger=wandb_logger
     )
 
     # Train the model

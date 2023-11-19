@@ -168,7 +168,6 @@ class RealEstateModel(pl.LightningModule):
         # Calculate Mean Absolute Error (MAE)
         loss = nn.L1Loss()(outputs, targets)
         self.log('train_mae', loss, prog_bar=True)    # Log MAE
-        wandb.log({'train_mae': loss})
         return loss
 
     def validation_step(self, batch, batch_idx):
@@ -176,7 +175,6 @@ class RealEstateModel(pl.LightningModule):
         outputs = self(tabular_data, image_data)
         loss = nn.L1Loss()(outputs, targets)
         self.log('valid_mae', loss, prog_bar=True, on_step=False, on_epoch=True)    # Log MAE
-        wandb.log({'valid_mae': loss})
 
     def predict_step(self, batch, batch_idx):
         tabular_data, image_data, _ = batch
