@@ -8,6 +8,7 @@ from torch.utils.data import DataLoader
 import torch.nn.functional as F
 import pytorch_lightning as pl
 from pytorch_tabnet.callbacks import Callback
+from torchvision import models
 
 
 class WandbCallback(Callback):
@@ -113,6 +114,33 @@ class RealEstateTestDataset(Dataset):
         return tabular_features, images
 
 
+class ModifiedMobileNet(nn.Module):
+    def __init__(self, freeze=True, mid_level_layer=7, hidden_size=8):
+        super(ModifiedMobileNet, self).__init__()
+        # Load the pre-trained MobileNet model
+        mobilenet = models.mobilenet_v2(pretrained=True)
+
+        # Extract layers up to the mid-level layer
+        self.features = nn.Sequential(*list(mobilenet.features.children())[:mid_level_layer])
+
+        # Freeze the layers if specified
+        if freeze:
+            for param in self.features.parameters():
+                param.requires_grad = False
+
+        # Flatten the output
+        self.flatten = nn.Flatten()
+
+         # Additional trainable fully connected layer
+        self.additional_fc = nn.Linear(4096, hidden_size)
+
+    def forward(self, x):
+        x = self.features(x)
+        x = self.flatten(x)
+        x = self.additional_fc(x)
+        return x
+
+
 class RealEstateModel(pl.LightningModule):
     def __init__(self, tabular_input_size, im_size, hidden_size=64, max_images=6, lr=1e-3, lr_factor=0.1, lr_patience=50):
         super(RealEstateModel, self).__init__()
@@ -130,13 +158,14 @@ class RealEstateModel(pl.LightningModule):
         )
 
         # Image model with modified structure
-        self.image_model = nn.Sequential(
-            nn.Conv2d(3, 16, kernel_size=3, stride=1, padding=1),
-            nn.ReLU(),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-            nn.Flatten(),
-            nn.Linear(int(16 * im_size[0] * im_size[1] / 4), hidden_size)  # Adjusted to match with the hidden size
-        )
+        self.image_model = ModifiedMobileNet(freeze=True, mid_level_layer=8, hidden_size=hidden_size)
+        # self.image_model = nn.Sequential(
+        #     nn.Conv2d(3, 16, kernel_size=3, stride=1, padding=1),
+        #     nn.ReLU(),
+        #     nn.MaxPool2d(kernel_size=2, stride=2),
+        #     nn.Flatten(),
+        #     nn.Linear(int(16 * im_size[0] * im_size[1] / 4), hidden_size)  # Adjusted to match with the hidden size
+        # )
 
         # Combined model
         self.fc_combined = nn.Sequential(
