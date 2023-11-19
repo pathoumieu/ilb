@@ -4,9 +4,14 @@ tags:
 valid_size: 0.2
 
 quantile_transform: 'normal'
+
 n_quantiles: 100
+
 clip_rooms: null
+
 im_size: !!python/tuple [0,0]
+
+save: True
 
 model_params:
   max_epochs: 1

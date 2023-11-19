@@ -136,23 +136,21 @@ if __name__ == "__main__":
             hidden_size=config.get('hidden_size')
             )
 
-    predictions = trainer.predict(best_model, dataloaders=dataloader_test)
-    y_pred_valid = np.exp(np.concatenate(trainer.predict(model, dataloaders=dataloader_valid))).flatten()
-
-    y_random['price'] = np.exp(np.concatenate(predictions)).flatten()
-    y_random.to_csv(f'{dfd}/submission.csv', index=False)
-
     # y_pred_train = np.exp(clf.predict(X_train[cols].values))
+    y_pred_valid = np.exp(np.concatenate(trainer.predict(best_model, dataloaders=dataloader_valid))).flatten()
 
-    artifact = wandb.Artifact(name="submission", type="test predictions")
-    artifact.add_file(local_path=f'{dfd}/submission.csv')
-    run.log_artifact(artifact)
+    if config.get('save'):
+        predictions = trainer.predict(best_model, dataloaders=dataloader_test)
+        y_random['price'] = np.exp(np.concatenate(predictions)).flatten()
+        y_random.to_csv(f'{dfd}/submission.csv', index=False)
 
-    # saving_path_name = f"{dfd}/tabnet_model.pt"
-    # saved_filepath = clf.save_model(saving_path_name)
-    # artifact = wandb.Artifact(name="tabnet_model", type="model")
-    # artifact.add_file(local_path=f'{dfd}/tabnet_model.pt.zip')
-    # run.log_artifact(artifact)
+        artifact = wandb.Artifact(name="submission", type="test predictions")
+        artifact.add_file(local_path=f'{dfd}/submission.csv')
+        run.log_artifact(artifact)
+
+        artifact = wandb.Artifact(name="mmnn_model", type="model")
+        artifact.add_file(local_path=checkpoint_callback.best_model_path)
+        run.log_artifact(artifact)
 
     run.log(
         {
