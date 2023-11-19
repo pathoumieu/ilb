@@ -87,15 +87,15 @@ if __name__ == "__main__":
     # Create datasets and dataloaders
     dataloader_train = get_dataloader(
         X_train, target_train, True, 'train', im_size=config.get('im_size'),
-        transform=transform, batch_size=config.get('batch_size')
+        transform=transform, batch_size=config.get('batch_size'), num_workers=config.get('num_workers')
         )
     dataloader_valid = get_dataloader(
         X_valid, target_valid, False, 'train', im_size=config.get('im_size'),
-        transform=transform, batch_size=config.get('batch_size')
+        transform=transform, batch_size=config.get('batch_size'), num_workers=config.get('num_workers')
         )
     dataloader_test = get_dataloader(
         X_test, X_test.id_annonce, False, 'test', im_size=config.get('im_size'),
-        transform=transform, batch_size=config.get('predict_batch_size')
+        transform=transform, batch_size=config.get('predict_batch_size'), num_workers=config.get('num_workers')
         )
 
     # Create the model

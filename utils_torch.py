@@ -9,8 +9,6 @@ import torch.nn.functional as F
 import pytorch_lightning as pl
 from pytorch_tabnet.callbacks import Callback
 
-NUM_WORKERS = 8
-
 
 class WandbCallback(Callback):
     """Callback that records events into a `History` object.
@@ -204,7 +202,7 @@ class RealEstateModel(pl.LightningModule):
         }
 
 
-def get_dataloader(X, y, shuffle, dir, transform, batch_size, im_size):
+def get_dataloader(X, y, shuffle, dir, transform, batch_size, im_size, num_workers=8):
         dataset = RealEstateDataset(
             tabular_data=X,
             target=y,
@@ -217,7 +215,7 @@ def get_dataloader(X, y, shuffle, dir, transform, batch_size, im_size):
                 dataset,
                 batch_size=batch_size,
                 shuffle=shuffle,
-                num_workers=NUM_WORKERS
+                num_workers=num_workers
                 )
             )
         return dataloader

@@ -13,6 +13,8 @@ im_size: !!python/tuple [64,64]
 
 save: False
 
+num_workers: 8
+
 model_params:
   max_epochs: 1
   patience: 1
