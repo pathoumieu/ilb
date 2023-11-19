@@ -7,6 +7,7 @@ import pytorch_lightning as pl
 from pytorch_lightning.loggers import WandbLogger
 from sklearn.metrics import mean_absolute_percentage_error as MAPE
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
+from pytorch_lightning.callbacks import ModelCheckpoint
 
 sys.path.append(os.getcwd())
 from utils import CAT_COLS, CONT_COLS, preprocess
@@ -110,19 +111,32 @@ if __name__ == "__main__":
 
     # Initialize a trainer
     wandb_logger = WandbLogger(log_model="all")
+    checkpoint_callback = ModelCheckpoint(save_top_k=1, monitor="valid_mae", mode="min")
+
     trainer = pl.Trainer(
         max_epochs=config.get('max_epochs'),
         log_every_n_steps=1,
         enable_progress_bar=True,
         enable_model_summary=True,
         logger=wandb_logger,
-        callbacks=[EarlyStopping(monitor="val_mae", mode="min", patience=config.get('lr_patience'))]
+        callbacks=[
+            EarlyStopping(monitor="valid_mae", mode="min", patience=config.get('lr_patience')),
+            checkpoint_callback
+            ]
     )
 
     # Train the model
     trainer.fit(model, dataloader_train, val_dataloaders=dataloader_valid)
 
-    predictions = trainer.predict(model, dataloaders=dataloader_test)
+    print('Reloading best weights...')
+    best_model = RealEstateModel.load_from_checkpoint(
+            checkpoint_callback.best_model_path,
+            tabular_input_size=len(X_train.columns) - 1,
+            im_size=IMG_SIZE,
+            hidden_size=config.get('hidden_size')
+            )
+
+    predictions = trainer.predict(best_model, dataloaders=dataloader_test)
     y_pred_valid = np.exp(np.concatenate(trainer.predict(model, dataloaders=dataloader_valid))).flatten()
 
     y_random['price'] = np.exp(np.concatenate(predictions)).flatten()
