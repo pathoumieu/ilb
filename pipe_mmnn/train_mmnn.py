@@ -6,16 +6,13 @@ from torchvision import transforms
 import pytorch_lightning as pl
 from pytorch_lightning.loggers import WandbLogger
 from sklearn.metrics import mean_absolute_percentage_error as MAPE
+from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 
 sys.path.append(os.getcwd())
 from utils import CAT_COLS, CONT_COLS, preprocess
 from utils_torch import RealEstateModel, get_dataloader
 
 IMG_SIZE = (128, 128)
-BATCH_SIZE = 128
-PREDICT_BATCH_SIZE = 256
-MAX_EPOCHS = 1
-HIDDEN_SIZE = 8
 DEBUG = True
 
 
@@ -90,45 +87,39 @@ if __name__ == "__main__":
     # Create datasets and dataloaders
     dataloader_train = get_dataloader(
         X_train, target_train, True, 'train',
-        transform=transform, batch_size=BATCH_SIZE
+        transform=transform, batch_size=config.get('batch_size')
         )
     dataloader_valid = get_dataloader(
         X_valid, target_valid, False, 'train',
-        transform=transform, batch_size=BATCH_SIZE
+        transform=transform, batch_size=config.get('batch_size')
         )
     dataloader_test = get_dataloader(
         X_test, X_test.id_annonce, False, 'test',
-        transform=transform, batch_size=PREDICT_BATCH_SIZE
+        transform=transform, batch_size=config.get('predict_batch_size')
         )
 
     # Create the model
     model = RealEstateModel(
         tabular_input_size=len(X_train.columns) - 1,
         im_size=IMG_SIZE,
-        hidden_size=HIDDEN_SIZE
+        hidden_size=config.get('hidden_size'),
+        lr=config.get('lr'),
+        lr_factor=config.get('lr_factor'),
+        lr_patience=config.get('lr_patience')
         )
 
     # Initialize a trainer
     wandb_logger = WandbLogger(log_model="all")
     trainer = pl.Trainer(
-        max_epochs=MAX_EPOCHS,
+        max_epochs=config.get('max_epochs'),
         log_every_n_steps=1,
         enable_progress_bar=True,
         enable_model_summary=True,
-        logger=wandb_logger
+        logger=wandb_logger,
+        callbacks=[EarlyStopping(monitor="val_mae", mode="min", patience=config.get('lr_patience'))]
     )
 
     # Train the model
-    # max_epochs = config.get('max_epochs')
-    # model_params = {
-    #     'optimizer_params': {'lr': config.get('lr')},
-    #     'gamma': config.get('gamma'),
-    #     'n_steps': config.get('n_steps'),
-    #     'n_a': config.get('n_a'),
-    #     'n_d': config.get('n_a'),
-    #     'n_shared': config.get('n_shared'),
-    #     'n_independent': config.get('n_shared')
-    #     }
     trainer.fit(model, dataloader_train, val_dataloaders=dataloader_valid)
 
     predictions = trainer.predict(model, dataloaders=dataloader_test)

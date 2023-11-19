@@ -85,7 +85,7 @@ if __name__ == "__main__":
         optimizer_fn=torch.optim.Adam,
         scheduler_fn=torch.optim.lr_scheduler.ReduceLROnPlateau,
         scheduler_params={
-            "mode": 'min', # max because default eval metric for binary is AUC
+            "mode": 'min',
             "factor": config.get('lr_factor'),
             "patience": config.get('lr_patience')
             },

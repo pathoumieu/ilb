@@ -114,11 +114,14 @@ class RealEstateTestDataset(Dataset):
 
 
 class RealEstateModel(pl.LightningModule):
-    def __init__(self, tabular_input_size, im_size, hidden_size=64, max_images=6):
+    def __init__(self, tabular_input_size, im_size, hidden_size=64, max_images=6, lr=1e-3, lr_factor=0.1, lr_patience=50):
         super(RealEstateModel, self).__init__()
         self.max_images = max_images
         self.im_size = im_size
         self.hidden_size = hidden_size
+        self.lr = lr
+        self.lr_factor = lr_factor
+        self.lr_patience = lr_patience
 
         # Tabular model
         self.tabular_model = nn.Sequential(
@@ -181,8 +184,22 @@ class RealEstateModel(pl.LightningModule):
         return self(tabular_data, image_data)
 
     def configure_optimizers(self):
-        optimizer = torch.optim.Adam(self.parameters(), lr=0.001)
-        return optimizer
+        optimizer = torch.optim.Adam(self.parameters(), lr=self.lr)
+        sched = torch.optim.lr_scheduler.ReduceLROnPlateau(
+            optimizer,
+            mode='min',
+            factor=self.lr_factor,
+            patience=self.lr_patience,
+        )
+        scheduler = {
+            "scheduler": sched,
+            "monitor": "val_mae",
+            "frequency": 1,
+        }
+        return {
+            "optimizer": optimizer,
+            "lr_scheduler": scheduler,
+        }
 
 
 def get_dataloader(X, y, shuffle, dir, transform, batch_size):
