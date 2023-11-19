@@ -45,10 +45,11 @@ class WandbCallback(Callback):
 
 
 class RealEstateDataset(Dataset):
-    def __init__(self, tabular_data, target, image_dir, transform=None, max_images=6):
+    def __init__(self, tabular_data, target, image_dir, im_size, transform=None, max_images=6):
         self.tabular = tabular_data
         self.target = target
         self.image_dir = image_dir
+        self.im_size = im_size
         self.transform = transform
         self.max_images = max_images
 
@@ -71,7 +72,7 @@ class RealEstateDataset(Dataset):
                 images.append(image)
             else:
                 # Pad with zeros if fewer images exist
-                images.append(torch.zeros((3, 128, 128)))
+                images.append(torch.zeros((3, *self.im_size)))
 
         tabular_features = torch.tensor(tabular_features, dtype=torch.float)
         images = torch.stack(images)
@@ -81,11 +82,12 @@ class RealEstateDataset(Dataset):
 
 
 class RealEstateTestDataset(Dataset):
-    def __init__(self, tabular_data, image_dir, transform=None, max_images=6):
+    def __init__(self, tabular_data, image_dir, im_size, transform=None, max_images=6):
         self.tabular = tabular_data
         self.image_dir = image_dir
         self.transform = transform
         self.max_images = max_images
+        self.im_size = im_size
 
     def __len__(self):
         return len(self.tabular)
@@ -105,7 +107,7 @@ class RealEstateTestDataset(Dataset):
                 images.append(image)
             else:
                 # Pad with zeros if fewer images exist
-                images.append(torch.zeros((3, 128, 128)))
+                images.append(torch.zeros(3, *self.im_size))
 
         tabular_features = torch.tensor(tabular_features, dtype=torch.float)
         images = torch.stack(images)
@@ -135,7 +137,7 @@ class RealEstateModel(pl.LightningModule):
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2),
             nn.Flatten(),
-            nn.Linear(16 * 64 * 64, hidden_size)  # Adjusted to match with the hidden size
+            nn.Linear(int(16 * im_size[0] * im_size[1] / 4), hidden_size)  # Adjusted to match with the hidden size
         )
 
         # Combined model
@@ -202,10 +204,11 @@ class RealEstateModel(pl.LightningModule):
         }
 
 
-def get_dataloader(X, y, shuffle, dir, transform, batch_size):
+def get_dataloader(X, y, shuffle, dir, transform, batch_size, im_size):
         dataset = RealEstateDataset(
             tabular_data=X,
             target=y,
+            im_size=im_size,
             image_dir=f'data/reduced_images_ILB/reduced_images/{dir}',
             transform=transform
             )

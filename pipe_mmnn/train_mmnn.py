@@ -13,7 +13,6 @@ sys.path.append(os.getcwd())
 from utils import CAT_COLS, CONT_COLS, preprocess
 from utils_torch import RealEstateModel, get_dataloader
 
-IMG_SIZE = (128, 128)
 DEBUG = True
 
 
@@ -78,7 +77,7 @@ if __name__ == "__main__":
     # Assuming you have X_train, y_train, and the image folder directory
     # Create transforms for image processing
     transform = transforms.Compose([
-        transforms.Resize(IMG_SIZE),
+        transforms.Resize(config.get('im_size')),
         transforms.ToTensor()
     ])
 
@@ -87,22 +86,22 @@ if __name__ == "__main__":
 
     # Create datasets and dataloaders
     dataloader_train = get_dataloader(
-        X_train, target_train, True, 'train',
+        X_train, target_train, True, 'train', im_size=config.get('im_size'),
         transform=transform, batch_size=config.get('batch_size')
         )
     dataloader_valid = get_dataloader(
-        X_valid, target_valid, False, 'train',
+        X_valid, target_valid, False, 'train', im_size=config.get('im_size'),
         transform=transform, batch_size=config.get('batch_size')
         )
     dataloader_test = get_dataloader(
-        X_test, X_test.id_annonce, False, 'test',
+        X_test, X_test.id_annonce, False, 'test', im_size=config.get('im_size'),
         transform=transform, batch_size=config.get('predict_batch_size')
         )
 
     # Create the model
     model = RealEstateModel(
         tabular_input_size=len(X_train.columns) - 1,
-        im_size=IMG_SIZE,
+        im_size=config.get('im_size'),
         hidden_size=config.get('hidden_size'),
         lr=config.get('lr'),
         lr_factor=config.get('lr_factor'),
@@ -132,7 +131,7 @@ if __name__ == "__main__":
     best_model = RealEstateModel.load_from_checkpoint(
             checkpoint_callback.best_model_path,
             tabular_input_size=len(X_train.columns) - 1,
-            im_size=IMG_SIZE,
+            im_size=config.get('im_size'),
             hidden_size=config.get('hidden_size')
             )
 

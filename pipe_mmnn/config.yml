@@ -9,9 +9,9 @@ n_quantiles: 100
 
 clip_rooms: null
 
-im_size: !!python/tuple [0,0]
+im_size: !!python/tuple [64,64]
 
-save: True
+save: False
 
 model_params:
   max_epochs: 1
