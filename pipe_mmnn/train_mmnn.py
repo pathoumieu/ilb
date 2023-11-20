@@ -13,7 +13,7 @@ sys.path.append(os.getcwd())
 from utils import CAT_COLS, CONT_COLS, preprocess
 from utils_torch import RealEstateModel, get_dataloader
 
-DEBUG = False
+DEBUG = True
 
 
 if __name__ == "__main__":

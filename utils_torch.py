@@ -193,9 +193,17 @@ class RealEstateModel(pl.LightningModule):
                 nn.Linear(int(16 * im_size[0] * im_size[1] / 4), hidden_size)  # Adjusted to match with the hidden size
             )
 
+        # Attention mechanism
+        self.attention = nn.Sequential(
+            nn.Linear(hidden_size, hidden_size),
+            nn.Tanh(),
+            nn.Linear(hidden_size, 1)
+        )
+        self.values_layer = nn.Linear(hidden_size, hidden_size)
+
         # Combined model
         self.fc_combined = nn.Sequential(
-            nn.Linear(hidden_size + hidden_size * self.max_images, 32),  # Update input size for concatenated output
+            nn.Linear(hidden_size + hidden_size, 32),  # Update input size for concatenated output
             nn.ReLU(),
             nn.Linear(32, 1)
         )
@@ -209,11 +217,16 @@ class RealEstateModel(pl.LightningModule):
         # Process all images in one pass
         image_output = self.image_model(image_data)
 
-        # Reshape image_output to (batch_size, max_images * hidden_size)
-        image_output = image_output.view(-1, self.max_images * self.hidden_size)
+        # Reshape image_output to (batch_size, max_images, hidden_size)
+        image_output = image_output.view(-1, self.max_images, self.hidden_size)
+        image_values = self.values_layer(image_output)
+
+        # Apply attention mechanism
+        attention_weights = F.softmax(self.attention(image_output), dim=1)
+        attended_image_features = torch.sum(attention_weights * image_values, dim=1)
 
         # Combine tabular and image outputs
-        combined = torch.cat((tabular_output, image_output), dim=1)
+        combined = torch.cat((tabular_output, attended_image_features), dim=1)
 
         # Final prediction
         output = self.fc_combined(combined).squeeze(1)
