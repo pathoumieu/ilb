@@ -106,6 +106,7 @@ if __name__ == "__main__":
         im_size=config.get('im_size'),
         hidden_size=config.get('hidden_size'),
         lr=config.get('lr'),
+        weight_decay=config.get('weight_decay'),
         lr_factor=config.get('lr_factor'),
         lr_patience=config.get('lr_patience'),
         pretrain=config.get('pretrain'),
