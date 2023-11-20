@@ -30,3 +30,5 @@ model_params:
   mid_level_layer: 7
   embed_scale: 2
   debug: True
+  frozen_pretrained_tabnet: False
+  embed_frozen_pretrained_tabnet: True

@@ -1,5 +1,7 @@
 import os
 import wandb
+import zipfile
+import json
 from PIL import Image
 import torch
 import torch.nn as nn
@@ -42,6 +44,51 @@ class WandbCallback(Callback):
 
     def on_batch_end(self, batch, logs=None):
         pass
+
+
+def load_trained_tabnet(run, freeze=True, freeze_embed=True):
+    artifact = run.use_artifact("tabnet_model:v50")
+
+    datadir = artifact.download()
+
+    with zipfile.ZipFile(datadir + '/tabnet_model.pt.zip', 'r') as zip_ref:
+        zip_ref.extractall(datadir)
+
+    with open(datadir + '/model_params.json', 'r') as f:
+        model_params = json.load(f)
+
+    keys_to_pop = [
+        'clip_value',
+        'device_name',
+        'grouped_features',
+        'lambda_sparse',
+        'n_shared_decoder',
+        'n_indep_decoder',
+        'optimizer_params',
+        'scheduler_params',
+        'seed',
+        'verbose',
+    ]
+
+    for key in keys_to_pop:
+        model_params['init_params'].pop(key)
+
+    model = TabNet(**model_params['init_params'], group_attention_matrix=torch.eye(model_params['init_params']['input_dim']))
+
+    model.load_state_dict(torch.load(datadir + '/network.pt'))
+
+    # Freeze the weights
+    if freeze:
+        for param in model.parameters():
+            param.requires_grad = False
+
+    if freeze_embed and not freeze:
+        # Freeze specific layers, for example, embedding layers
+        for layer in model.embedder.embeddings.children():
+            if isinstance(layer, nn.Embedding):
+                layer.weight.requires_grad = False
+
+    return model
 
 
 class RealEstateDataset(Dataset):
@@ -149,6 +196,26 @@ class ModifiedMobileNet(nn.Module):
         return x
 
 
+class TabNetEncoder(nn.Module):
+    def __init__(self, tabnet_model):
+        super(TabNetEncoder, self).__init__()
+        self.embedder = tabnet_model.embedder
+        self.tabnet = tabnet_model.tabnet
+        # self.out_features = self.tabnet.final_mapping.in_features
+
+        # Remove the final mapping layer
+        self.tabnet.final_mapping = nn.Identity()
+
+    def forward(self, x):
+        # Forward pass through the embedding layers
+        x = self.embedder(x)
+
+        # Forward pass through the TabNet encoder layers
+        x = self.tabnet(x)
+
+        return x
+
+
 class RealEstateModel(pl.LightningModule):
     def __init__(
             self,
@@ -164,7 +231,8 @@ class RealEstateModel(pl.LightningModule):
             lr_factor=0.1,
             lr_patience=50,
             pretrain=True,
-            mid_level_layer=8
+            mid_level_layer=8,
+            pretrained_tabnet=None,
             ):
         super(RealEstateModel, self).__init__()
         self.max_images = max_images
@@ -183,18 +251,23 @@ class RealEstateModel(pl.LightningModule):
         #     nn.ReLU()
         # )
         # TabNet model for tabular data
-        self.tabular_model = TabNet(
-            input_dim=tabular_input_size,
-            output_dim=self.hidden_size,
-            n_d=8,  # Specify input size for TabNet
-            n_a=8,
-            n_steps=1,  # Number of steps in the attention mechanism
-            gamma=1.3,  # Regularization parameter
-            cat_idxs=cat_idxs,
-            cat_dims=cat_dims,
-            cat_emb_dim=cat_emb_dim,
-            group_attention_matrix=torch.eye(tabular_input_size)
-        )
+        if pretrained_tabnet is None:
+            self.tabular_model = TabNet(
+                input_dim=tabular_input_size,
+                output_dim=self.hidden_size,
+                n_d=8,  # Specify input size for TabNet
+                n_a=8,
+                n_steps=1,  # Number of steps in the attention mechanism
+                gamma=1.3,  # Regularization parameter
+                cat_idxs=cat_idxs,
+                cat_dims=cat_dims,
+                cat_emb_dim=cat_emb_dim,
+                group_attention_matrix=torch.eye(tabular_input_size)
+            )
+            out_size = hidden_size
+        else:
+            self.tabular_model = TabNetEncoder(pretrained_tabnet)
+            out_size = 32  # self.tabular_model.out_features
 
         # Image model with modified structure
         if pretrain is not None:
@@ -224,7 +297,7 @@ class RealEstateModel(pl.LightningModule):
 
         # Combined model
         self.fc_combined = nn.Sequential(
-            nn.Linear(hidden_size + hidden_size, 32),  # Update input size for concatenated output
+            nn.Linear(out_size + hidden_size, 32),  # Update input size for concatenated output
             nn.ReLU(),
             nn.Linear(32, 1)
         )

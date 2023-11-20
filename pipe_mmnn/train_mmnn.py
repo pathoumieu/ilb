@@ -11,7 +11,7 @@ from pytorch_lightning.callbacks import ModelCheckpoint
 
 sys.path.append(os.getcwd())
 from utils import CAT_COLS, CONT_COLS, preprocess
-from utils_torch import RealEstateModel, get_dataloader
+from utils_torch import RealEstateModel, get_dataloader, load_trained_tabnet
 
 
 if __name__ == "__main__":
@@ -99,6 +99,13 @@ if __name__ == "__main__":
         transform=transform, batch_size=config.get('predict_batch_size'), num_workers=config.get('num_workers')
         )
     # Create the model
+    if config.get('frozen_pretrained_tabnet'):
+        pretrained_tabnet = load_trained_tabnet(run, freeze=True)
+    elif config.get('embed_frozen_pretrained_tabnet'):
+        pretrained_tabnet = load_trained_tabnet(run, freeze=False, freeze_embed=True)
+    else:
+        pretrained_tabnet = None
+
     model = RealEstateModel(
         tabular_input_size=len(X_train.columns) - 1,
         im_size=config.get('im_size'),
@@ -110,7 +117,8 @@ if __name__ == "__main__":
         pretrain=config.get('pretrain'),
         cat_idxs=cat_idxs,
         cat_dims=cat_dims,
-        cat_emb_dim=cat_emb_dim
+        cat_emb_dim=cat_emb_dim,
+        pretrained_tabnet=pretrained_tabnet
         )
 
     # Initialize a trainer
@@ -140,7 +148,8 @@ if __name__ == "__main__":
             hidden_size=config.get('hidden_size'),
             cat_idxs=cat_idxs,
             cat_dims=cat_dims,
-            cat_emb_dim=cat_emb_dim
+            cat_emb_dim=cat_emb_dim,
+            pretrained_tabnet=pretrained_tabnet
             )
 
     # y_pred_train = np.exp(clf.predict(X_train[cols].values))
