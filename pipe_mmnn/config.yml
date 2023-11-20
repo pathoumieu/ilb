@@ -26,3 +26,5 @@ model_params:
   max_lr: 0.04
   weight_decay: 0.00001
   hidden_size: 8
+  pretrain: True  # if None : use dummy CNN, if True, use frozen MobilNet, if False, unfreeze MobileNet
+  mid_level_layer: 7

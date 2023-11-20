@@ -105,7 +105,8 @@ if __name__ == "__main__":
         hidden_size=config.get('hidden_size'),
         lr=config.get('lr'),
         lr_factor=config.get('lr_factor'),
-        lr_patience=config.get('lr_patience')
+        lr_patience=config.get('lr_patience'),
+        pretrain=config.get('pretrain')
         )
 
     # Initialize a trainer

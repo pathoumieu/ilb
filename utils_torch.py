@@ -115,10 +115,10 @@ class RealEstateTestDataset(Dataset):
 
 
 class ModifiedMobileNet(nn.Module):
-    def __init__(self, freeze=True, mid_level_layer=7, hidden_size=8):
+    def __init__(self, freeze=True, mid_level_layer=7, hidden_size=8, im_size=(64, 64)):
         super(ModifiedMobileNet, self).__init__()
         # Load the pre-trained MobileNet model
-        mobilenet = models.mobilenet_v2(pretrained=True)
+        mobilenet = models.mobilenet_v2(weights="MobileNet_V2_Weights.DEFAULT")
 
         # Extract layers up to the mid-level layer
         self.features = nn.Sequential(*list(mobilenet.features.children())[:mid_level_layer])
@@ -131,8 +131,13 @@ class ModifiedMobileNet(nn.Module):
         # Flatten the output
         self.flatten = nn.Flatten()
 
-         # Additional trainable fully connected layer
-        self.additional_fc = nn.Linear(4096, hidden_size)
+        # Get the number of output channels at the specified mid_level_layer
+        dummy_input = torch.randn(1, 3, *im_size)  # Assuming input size of 224x224
+        mid_level_output = self.flatten(self.features(dummy_input))
+        num_channels = mid_level_output.size(1)
+
+        # Additional trainable fully connected layer
+        self.additional_fc = nn.Linear(num_channels, hidden_size)
 
     def forward(self, x):
         x = self.features(x)
@@ -142,7 +147,18 @@ class ModifiedMobileNet(nn.Module):
 
 
 class RealEstateModel(pl.LightningModule):
-    def __init__(self, tabular_input_size, im_size, hidden_size=64, max_images=6, lr=1e-3, lr_factor=0.1, lr_patience=50):
+    def __init__(
+            self,
+            tabular_input_size,
+            im_size,
+            hidden_size=64,
+            max_images=6,
+            lr=1e-3,
+            lr_factor=0.1,
+            lr_patience=50,
+            pretrain=True,
+            mid_level_layer=8
+            ):
         super(RealEstateModel, self).__init__()
         self.max_images = max_images
         self.im_size = im_size
@@ -150,6 +166,8 @@ class RealEstateModel(pl.LightningModule):
         self.lr = lr
         self.lr_factor = lr_factor
         self.lr_patience = lr_patience
+        self.pretrain = pretrain
+        self.mid_level_layer = mid_level_layer
 
         # Tabular model
         self.tabular_model = nn.Sequential(
@@ -158,14 +176,22 @@ class RealEstateModel(pl.LightningModule):
         )
 
         # Image model with modified structure
-        self.image_model = ModifiedMobileNet(freeze=True, mid_level_layer=8, hidden_size=hidden_size)
-        # self.image_model = nn.Sequential(
-        #     nn.Conv2d(3, 16, kernel_size=3, stride=1, padding=1),
-        #     nn.ReLU(),
-        #     nn.MaxPool2d(kernel_size=2, stride=2),
-        #     nn.Flatten(),
-        #     nn.Linear(int(16 * im_size[0] * im_size[1] / 4), hidden_size)  # Adjusted to match with the hidden size
-        # )
+        if pretrain is not None:
+            assert type(pretrain) is bool
+            self.image_model = ModifiedMobileNet(
+                freeze=pretrain,
+                mid_level_layer=mid_level_layer,
+                hidden_size=hidden_size,
+                im_size=im_size,
+                )
+        else:
+            self.image_model = nn.Sequential(
+                nn.Conv2d(3, 16, kernel_size=3, stride=1, padding=1),
+                nn.ReLU(),
+                nn.MaxPool2d(kernel_size=2, stride=2),
+                nn.Flatten(),
+                nn.Linear(int(16 * im_size[0] * im_size[1] / 4), hidden_size)  # Adjusted to match with the hidden size
+            )
 
         # Combined model
         self.fc_combined = nn.Sequential(
