@@ -9,6 +9,7 @@ import torch.nn.functional as F
 import pytorch_lightning as pl
 from pytorch_tabnet.callbacks import Callback
 from torchvision import models
+from pytorch_tabnet.tab_network import TabNet
 
 
 class WandbCallback(Callback):
@@ -44,19 +45,20 @@ class WandbCallback(Callback):
 
 
 class RealEstateDataset(Dataset):
-    def __init__(self, tabular_data, target, image_dir, im_size, transform=None, max_images=6):
+    def __init__(self, tabular_data, cols, target, image_dir, im_size, transform=None, max_images=6):
         self.tabular = tabular_data
         self.target = target
         self.image_dir = image_dir
         self.im_size = im_size
         self.transform = transform
         self.max_images = max_images
+        self.cols = cols
 
     def __len__(self):
         return len(self.tabular)
 
     def __getitem__(self, idx):
-        tabular_features = self.tabular.drop(columns=['id_annonce']).iloc[idx].values.tolist()
+        tabular_features = self.tabular[self.cols].iloc[idx].values.tolist()
         targets = self.target.iloc[idx].tolist()
 
         image_folder = os.path.join(self.image_dir, 'ann_' + str(int(self.tabular.iloc[idx]['id_annonce'])))
@@ -81,18 +83,19 @@ class RealEstateDataset(Dataset):
 
 
 class RealEstateTestDataset(Dataset):
-    def __init__(self, tabular_data, image_dir, im_size, transform=None, max_images=6):
+    def __init__(self, tabular_data, cols, image_dir, im_size, transform=None, max_images=6):
         self.tabular = tabular_data
         self.image_dir = image_dir
         self.transform = transform
         self.max_images = max_images
         self.im_size = im_size
+        self.cols = cols
 
     def __len__(self):
         return len(self.tabular)
 
     def __getitem__(self, idx):
-        tabular_features = self.tabular.drop(columns=['id_annonce']).iloc[idx].values.tolist()
+        tabular_features = self.tabular[self.cols].iloc[idx].values.tolist()
 
         image_folder = os.path.join(self.image_dir, 'ann_' + str(int(self.tabular.iloc[idx]['id_annonce'])))
         image_paths = [os.path.join(image_folder, image) for image in os.listdir(image_folder)]
@@ -151,6 +154,9 @@ class RealEstateModel(pl.LightningModule):
             self,
             tabular_input_size,
             im_size,
+            cat_idxs,
+            cat_dims,
+            cat_emb_dim,
             hidden_size=64,
             max_images=6,
             lr=1e-3,
@@ -169,10 +175,23 @@ class RealEstateModel(pl.LightningModule):
         self.pretrain = pretrain
         self.mid_level_layer = mid_level_layer
 
-        # Tabular model
-        self.tabular_model = nn.Sequential(
-            nn.Linear(tabular_input_size, hidden_size),
-            nn.ReLU()
+        # # Tabular model
+        # self.tabular_model = nn.Sequential(
+        #     nn.Linear(tabular_input_size, hidden_size),
+        #     nn.ReLU()
+        # )
+        # TabNet model for tabular data
+        self.tabular_model = TabNet(
+            input_dim=tabular_input_size,
+            output_dim=self.hidden_size,
+            n_d=32,  # Specify input size for TabNet
+            n_a=32,
+            n_steps=1,  # Number of steps in the attention mechanism
+            gamma=1.3,  # Regularization parameter
+            cat_idxs=cat_idxs,
+            cat_dims=cat_dims,
+            cat_emb_dim=cat_emb_dim,
+            group_attention_matrix=torch.eye(tabular_input_size)
         )
 
         # Image model with modified structure
@@ -209,7 +228,7 @@ class RealEstateModel(pl.LightningModule):
         )
 
     def forward(self, tabular_data, image_data):
-        tabular_output = self.tabular_model(tabular_data)
+        tabular_output, _ = self.tabular_model(tabular_data)
 
         # Reshape image_data to (batch_size * max_images, 3, 64, 64)
         image_data = image_data.view(-1, 3, *self.im_size)
@@ -270,10 +289,11 @@ class RealEstateModel(pl.LightningModule):
         }
 
 
-def get_dataloader(X, y, shuffle, dir, transform, batch_size, im_size, num_workers=8):
+def get_dataloader(X, cols, y, shuffle, dir, transform, batch_size, im_size, num_workers=8):
         dataset = RealEstateDataset(
             tabular_data=X,
             target=y,
+            cols=cols,
             im_size=im_size,
             image_dir=f'data/reduced_images_ILB/reduced_images/{dir}',
             transform=transform

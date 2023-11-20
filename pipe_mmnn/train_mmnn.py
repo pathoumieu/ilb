@@ -63,7 +63,7 @@ if __name__ == "__main__":
         y_random = pd.read_csv(f"{dfd}/y_random_MhJDhKK.csv")
 
     # Preprocess
-    X_train, y_train, X_valid, y_valid, X_test, _ = preprocess(
+    X_train, y_train, X_valid, y_valid, X_test, categorical_dims = preprocess(
         X_train,
         y_train,
         X_test,
@@ -72,6 +72,9 @@ if __name__ == "__main__":
         n_quantiles=config.get('n_quantiles'),
         clip_rooms=config.get('clip_rooms')
         )
+    cat_idxs = list(range(len(CAT_COLS)))
+    cat_dims = [categorical_dims[f] for f in CAT_COLS]
+    cat_emb_dim = [max(1, int(categorical_dims[f] / config.get('embed_scale'))) for f in CAT_COLS]
     cols = CAT_COLS + CONT_COLS
 
     # Assuming you have X_train, y_train, and the image folder directory
@@ -86,18 +89,17 @@ if __name__ == "__main__":
 
     # Create datasets and dataloaders
     dataloader_train = get_dataloader(
-        X_train, target_train, True, 'train', im_size=config.get('im_size'),
+        X_train, cols, target_train, True, 'train', im_size=config.get('im_size'),
         transform=transform, batch_size=config.get('batch_size'), num_workers=config.get('num_workers')
         )
     dataloader_valid = get_dataloader(
-        X_valid, target_valid, False, 'train', im_size=config.get('im_size'),
+        X_valid, cols, target_valid, False, 'train', im_size=config.get('im_size'),
         transform=transform, batch_size=config.get('batch_size'), num_workers=config.get('num_workers')
         )
     dataloader_test = get_dataloader(
-        X_test, X_test.id_annonce, False, 'test', im_size=config.get('im_size'),
+        X_test, cols, X_test.id_annonce, False, 'test', im_size=config.get('im_size'),
         transform=transform, batch_size=config.get('predict_batch_size'), num_workers=config.get('num_workers')
         )
-
     # Create the model
     model = RealEstateModel(
         tabular_input_size=len(X_train.columns) - 1,
@@ -106,7 +108,10 @@ if __name__ == "__main__":
         lr=config.get('lr'),
         lr_factor=config.get('lr_factor'),
         lr_patience=config.get('lr_patience'),
-        pretrain=config.get('pretrain')
+        pretrain=config.get('pretrain'),
+        cat_idxs=cat_idxs,
+        cat_dims=cat_dims,
+        cat_emb_dim=cat_emb_dim
         )
 
     # Initialize a trainer
@@ -133,7 +138,10 @@ if __name__ == "__main__":
             checkpoint_callback.best_model_path,
             tabular_input_size=len(X_train.columns) - 1,
             im_size=config.get('im_size'),
-            hidden_size=config.get('hidden_size')
+            hidden_size=config.get('hidden_size'),
+            cat_idxs=cat_idxs,
+            cat_dims=cat_dims,
+            cat_emb_dim=cat_emb_dim
             )
 
     # y_pred_train = np.exp(clf.predict(X_train[cols].values))
