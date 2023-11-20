@@ -186,8 +186,8 @@ class RealEstateModel(pl.LightningModule):
         self.tabular_model = TabNet(
             input_dim=tabular_input_size,
             output_dim=self.hidden_size,
-            n_d=32,  # Specify input size for TabNet
-            n_a=32,
+            n_d=8,  # Specify input size for TabNet
+            n_a=8,
             n_steps=1,  # Number of steps in the attention mechanism
             gamma=1.3,  # Regularization parameter
             cat_idxs=cat_idxs,

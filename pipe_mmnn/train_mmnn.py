@@ -13,8 +13,6 @@ sys.path.append(os.getcwd())
 from utils import CAT_COLS, CONT_COLS, preprocess
 from utils_torch import RealEstateModel, get_dataloader
 
-DEBUG = True
-
 
 if __name__ == "__main__":
 
@@ -51,7 +49,7 @@ if __name__ == "__main__":
     config = run.config
 
     # Load the tabular data
-    if DEBUG:
+    if config.get('debug'):
         X_train = pd.read_csv(f"{dfd}/X_train_J01Z4CN.csv").sample(frac=0.01)
         y_train = pd.read_csv(f"{dfd}/y_train_OXxrJt1.csv").iloc[X_train.index]
         X_test = pd.read_csv(f"{dfd}/X_test_BEhvxAN.csv").sample(frac=0.01)

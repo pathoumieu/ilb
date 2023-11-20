@@ -29,3 +29,4 @@ model_params:
   pretrain: True  # if None : use dummy CNN, if True, use frozen MobilNet, if False, unfreeze MobileNet
   mid_level_layer: 7
   embed_scale: 2
+  debug: True
