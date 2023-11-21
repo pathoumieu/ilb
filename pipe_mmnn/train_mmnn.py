@@ -132,7 +132,7 @@ if __name__ == "__main__":
         enable_model_summary=True,
         logger=wandb_logger,
         callbacks=[
-            EarlyStopping(monitor="valid_mae", mode="min", patience=config.get('lr_patience')),
+            EarlyStopping(monitor="valid_mae", mode="min", patience=config.get('patience')),
             checkpoint_callback
             ]
     )
