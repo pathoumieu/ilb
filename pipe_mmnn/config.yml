@@ -32,3 +32,5 @@ model_params:
   debug: True
   frozen_pretrained_tabnet: False
   embed_frozen_pretrained_tabnet: True
+  dropout: 0.9
+  loss_name: mae  # mae or mse

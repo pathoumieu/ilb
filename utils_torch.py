@@ -91,6 +91,12 @@ def load_trained_tabnet(run, freeze=True, freeze_embed=True):
     return model
 
 
+def MAPE(predictions, targets):
+    absolute_percentage_errors = torch.abs((targets - predictions) / targets)
+    mape = torch.mean(absolute_percentage_errors)
+    return mape.item()
+
+
 class RealEstateDataset(Dataset):
     def __init__(self, tabular_data, cols, target, image_dir, im_size, transform=None, max_images=6):
         self.tabular = tabular_data
@@ -165,7 +171,7 @@ class RealEstateTestDataset(Dataset):
 
 
 class ModifiedMobileNet(nn.Module):
-    def __init__(self, freeze=True, mid_level_layer=7, hidden_size=8, im_size=(64, 64)):
+    def __init__(self, freeze=True, mid_level_layer=7, hidden_size=8, im_size=(64, 64), dropout=0.9):
         super(ModifiedMobileNet, self).__init__()
         # Load the pre-trained MobileNet model
         mobilenet = models.mobilenet_v2(weights="MobileNet_V2_Weights.DEFAULT")
@@ -181,6 +187,9 @@ class ModifiedMobileNet(nn.Module):
         # Flatten the output
         self.flatten = nn.Flatten()
 
+        # BatchNorm after the linear layer
+        self.batch_norm = nn.BatchNorm1d(hidden_size)
+
         # Get the number of output channels at the specified mid_level_layer
         dummy_input = torch.randn(1, 3, *im_size)  # Assuming input size of 224x224
         mid_level_output = self.flatten(self.features(dummy_input))
@@ -189,10 +198,15 @@ class ModifiedMobileNet(nn.Module):
         # Additional trainable fully connected layer
         self.additional_fc = nn.Linear(num_channels, hidden_size)
 
+        self.dropout = nn.Dropout(dropout)
+
     def forward(self, x):
         x = self.features(x)
         x = self.flatten(x)
         x = self.additional_fc(x)
+        x = self.batch_norm(x)
+        x = F.relu(x)
+        x = self.dropout(x)
         return x
 
 
@@ -233,6 +247,8 @@ class RealEstateModel(pl.LightningModule):
             pretrain=True,
             mid_level_layer=8,
             pretrained_tabnet=None,
+            dropout=0.9,
+            loss_name='mae'
             ):
         super(RealEstateModel, self).__init__()
         self.max_images = max_images
@@ -244,6 +260,15 @@ class RealEstateModel(pl.LightningModule):
         self.lr_patience = lr_patience
         self.pretrain = pretrain
         self.mid_level_layer = mid_level_layer
+        self.dropout = dropout
+        self.loss_name = loss_name
+
+        if self.loss_name == 'mae':
+            self.loss_func = nn.L1Loss()
+        elif self.loss_name == 'mse':
+            self.loss_func = nn.MSELoss()
+        else:
+            raise ValueError('Wrong loss name')
 
         # # Tabular model
         # self.tabular_model = nn.Sequential(
@@ -277,6 +302,7 @@ class RealEstateModel(pl.LightningModule):
                 mid_level_layer=mid_level_layer,
                 hidden_size=hidden_size,
                 im_size=im_size,
+                dropout=dropout
                 )
         else:
             self.image_model = nn.Sequential(
@@ -290,14 +316,22 @@ class RealEstateModel(pl.LightningModule):
         # Attention mechanism
         self.attention = nn.Sequential(
             nn.Linear(hidden_size, hidden_size),
+            # nn.BatchNorm1d(hidden_size),
             nn.Tanh(),
-            nn.Linear(hidden_size, 1)
+            nn.Linear(hidden_size, 1),
+            # nn.BatchNorm1d(1),
+            nn.Dropout(self.dropout)
         )
-        self.values_layer = nn.Linear(hidden_size, hidden_size)
+        self.values_layer = nn.Sequential(
+            nn.Linear(hidden_size, hidden_size),
+            # nn.BatchNorm1d(hidden_size),
+            nn.Dropout(self.dropout)
+            )
 
         # Combined model
         self.fc_combined = nn.Sequential(
             nn.Linear(out_size + hidden_size, 32),  # Update input size for concatenated output
+            nn.Dropout(self.dropout),
             nn.ReLU(),
             nn.Linear(32, 1)
         )
@@ -329,17 +363,22 @@ class RealEstateModel(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         tabular_data, image_data, targets = batch
         outputs = self(tabular_data, image_data)
-        # loss = nn.MSELoss()(outputs, targets)
         # Calculate Mean Absolute Error (MAE)
-        loss = nn.L1Loss()(outputs, targets)
-        self.log('train_mae', loss, prog_bar=True)    # Log MAE
+
+        loss = self.loss_func(outputs, targets)
+        mape = MAPE(outputs, targets)
+        self.log(f'train_{self.loss_name}', loss, prog_bar=True)    # Log MAE
+        self.log('train_mape', mape, prog_bar=False)
         return loss
 
     def validation_step(self, batch, batch_idx):
         tabular_data, image_data, targets = batch
         outputs = self(tabular_data, image_data)
-        loss = nn.L1Loss()(outputs, targets)
-        self.log('valid_mae', loss, prog_bar=True, on_step=False, on_epoch=True)    # Log MAE
+        loss = self.loss_func(outputs, targets)
+        mape = MAPE(outputs, targets)
+        self.log(f'valid_{self.loss_name}', loss, prog_bar=True, on_step=False, on_epoch=True)    # Log MAE
+        self.log('valid_mape', mape, prog_bar=False, on_step=False, on_epoch=True)
+        return loss
 
     def predict_step(self, batch, batch_idx):
         tabular_data, image_data, _ = batch

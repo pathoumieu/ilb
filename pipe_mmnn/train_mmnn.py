@@ -118,12 +118,14 @@ if __name__ == "__main__":
         cat_idxs=cat_idxs,
         cat_dims=cat_dims,
         cat_emb_dim=cat_emb_dim,
-        pretrained_tabnet=pretrained_tabnet
+        pretrained_tabnet=pretrained_tabnet,
+        dropout=config.get('dropout'),
+        loss_name=config.get('loss_name')
         )
 
     # Initialize a trainer
     wandb_logger = WandbLogger(log_model="all")
-    checkpoint_callback = ModelCheckpoint(save_top_k=1, monitor="valid_mae", mode="min")
+    checkpoint_callback = ModelCheckpoint(save_top_k=1, monitor="valid_mape", mode="min")
 
     trainer = pl.Trainer(
         max_epochs=config.get('max_epochs'),
@@ -132,7 +134,7 @@ if __name__ == "__main__":
         enable_model_summary=True,
         logger=wandb_logger,
         callbacks=[
-            EarlyStopping(monitor="valid_mae", mode="min", patience=config.get('patience')),
+            EarlyStopping(monitor="valid_mape", mode="min", patience=config.get('patience')),
             checkpoint_callback
             ]
     )
@@ -149,7 +151,9 @@ if __name__ == "__main__":
             cat_idxs=cat_idxs,
             cat_dims=cat_dims,
             cat_emb_dim=cat_emb_dim,
-            pretrained_tabnet=pretrained_tabnet
+            pretrained_tabnet=pretrained_tabnet,
+            dropout=config.get('dropout'),
+            loss_name=config.get('loss_name')
             )
 
     # y_pred_train = np.exp(clf.predict(X_train[cols].values))
