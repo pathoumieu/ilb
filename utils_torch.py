@@ -38,8 +38,8 @@ class WandbCallback(Callback):
         pass
 
     def on_epoch_end(self, epoch, logs=None):
-        wandb.log({"train_mae": logs['train_mae']})
-        wandb.log({"valid_mae": logs['valid_mae']})
+        wandb.log({"train_mae": logs['train_mae'], "train_mape": logs['train_mape']})
+        wandb.log({"valid_mae": logs['valid_mae'], "valid_mape": logs['valid_mape']})
         pass
 
     def on_batch_end(self, batch, logs=None):
