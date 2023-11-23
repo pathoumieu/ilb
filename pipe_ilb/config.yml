@@ -3,6 +3,8 @@ tags:
 
 use_image_features: true
 
+valid_size: 0.2
+
 model_params:
   iterations: 2
   loss_function: MAE

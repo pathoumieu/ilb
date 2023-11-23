@@ -69,7 +69,7 @@ if __name__ == "__main__":
 
     X_train, X_test = prepare_datasets(X_train, X_test)
 
-    X_train, X_valid, y_train, y_valid = train_test_split(X_train, y_train, test_size=0.2, random_state=0)
+    X_train, X_valid, y_train, y_valid = train_test_split(X_train, y_train, test_size=config.get('valid_size'), random_state=0)
 
     preprocess_mapper = create_preprocessor(cont_cols, CAT_COLS)
 
