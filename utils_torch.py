@@ -171,10 +171,11 @@ class RealEstateTestDataset(Dataset):
 
 
 class ModifiedMobileNet(nn.Module):
-    def __init__(self, freeze=True, mid_level_layer=7, hidden_size=8, im_size=(64, 64), dropout=0.9):
+    def __init__(self, freeze=True, mid_level_layer=7, hidden_size=8, im_size=(64, 64), dropout=0.9, batch_norm=True):
         super(ModifiedMobileNet, self).__init__()
         # Load the pre-trained MobileNet model
         mobilenet = models.mobilenet_v2(weights="MobileNet_V2_Weights.DEFAULT")
+        self.batch_norm = batch_norm
 
         # Extract layers up to the mid-level layer
         self.features = nn.Sequential(*list(mobilenet.features.children())[:mid_level_layer])
@@ -204,7 +205,8 @@ class ModifiedMobileNet(nn.Module):
         x = self.features(x)
         x = self.flatten(x)
         x = self.additional_fc(x)
-        x = self.batch_norm(x)
+        if self.batch_norm:
+            x = self.batch_norm(x)
         x = F.relu(x)
         x = self.dropout(x)
         return x
@@ -248,7 +250,8 @@ class RealEstateModel(pl.LightningModule):
             mid_level_layer=8,
             pretrained_tabnet=None,
             dropout=0.9,
-            loss_name='mae'
+            loss_name='mae',
+            batch_norm=True
             ):
         super(RealEstateModel, self).__init__()
         self.max_images = max_images
@@ -262,6 +265,7 @@ class RealEstateModel(pl.LightningModule):
         self.mid_level_layer = mid_level_layer
         self.dropout = dropout
         self.loss_name = loss_name
+        self.batch_norm = batch_norm
 
         if self.loss_name == 'mae':
             self.loss_func = nn.L1Loss()
@@ -302,7 +306,8 @@ class RealEstateModel(pl.LightningModule):
                 mid_level_layer=mid_level_layer,
                 hidden_size=hidden_size,
                 im_size=im_size,
-                dropout=dropout
+                dropout=dropout,
+                batch_norm=batch_norm
                 )
         else:
             self.image_model = nn.Sequential(

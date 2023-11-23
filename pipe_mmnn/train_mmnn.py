@@ -120,7 +120,8 @@ if __name__ == "__main__":
         cat_emb_dim=cat_emb_dim,
         pretrained_tabnet=pretrained_tabnet,
         dropout=config.get('dropout'),
-        loss_name=config.get('loss_name')
+        loss_name=config.get('loss_name'),
+        batch_norm=config.get('batch_norm')
         )
 
     # Initialize a trainer
@@ -153,7 +154,8 @@ if __name__ == "__main__":
             cat_emb_dim=cat_emb_dim,
             pretrained_tabnet=pretrained_tabnet,
             dropout=config.get('dropout'),
-            loss_name=config.get('loss_name')
+            loss_name=config.get('loss_name'),
+            batch_norm=config.get('batch_norm')
             )
 
     # y_pred_train = np.exp(clf.predict(X_train[cols].values))
