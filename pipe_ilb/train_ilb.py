@@ -31,7 +31,7 @@ if __name__ == "__main__":
         # The FullLoader parameter handles the conversion from YAML
         # scalar values to Python the dictionary format
         default_config = yaml.load(file_, Loader=yaml.FullLoader)
-    wandb_config = {}
+    wandb_config = {key: value for key, value in default_config.items() if key != 'model_params'}
     wandb_config.update(default_config['model_params'])
 
     wandb.login()
@@ -53,11 +53,25 @@ if __name__ == "__main__":
     X_test = pd.read_csv(f"{dfd}/X_test_BEhvxAN.csv")
     y_random = pd.read_csv(f"{dfd}/y_random_MhJDhKK.csv")
 
+    if config.get('use_image_features'):
+        artifact = run.use_artifact("train_image_features:v0")
+        datadir = artifact.download()
+        train_features_df = pd.read_csv(datadir + '/X_train_image_features.csv')
+        X_train = X_train.merge(train_features_df, on='id_annonce', how='left')
+
+        artifact = run.use_artifact("test_image_features:v0")
+        datadir = artifact.download()
+        test_features_df = pd.read_csv(datadir + '/X_test_image_features.csv')
+        X_test = X_test.merge(test_features_df, on='id_annonce', how='left')
+        cont_cols = CONT_COLS + [f'image_feature_{i}' for i in range(len(train_features_df.columns) - 1)]
+    else:
+        cont_cols = CONT_COLS
+
     X_train, X_test = prepare_datasets(X_train, X_test)
 
     X_train, X_valid, y_train, y_valid = train_test_split(X_train, y_train, test_size=0.2, random_state=0)
 
-    preprocess_mapper = create_preprocessor(CONT_COLS, CAT_COLS)
+    preprocess_mapper = create_preprocessor(cont_cols, CAT_COLS)
 
     run_name = run.name
     config = run.config

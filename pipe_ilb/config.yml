@@ -1,6 +1,8 @@
 tags:
   - catboost
 
+use_image_features: true
+
 model_params:
   iterations: 2
   loss_function: MAE
