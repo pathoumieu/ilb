@@ -77,10 +77,17 @@ if __name__ == "__main__":
 
     # Assuming you have X_train, y_train, and the image folder directory
     # Create transforms for image processing
-    transform = transforms.Compose([
-        transforms.Resize(config.get('im_size')),
-        transforms.ToTensor()
-    ])
+    if config.get('norm_image'):
+        transform = transforms.Compose([
+            transforms.Resize(config.get('im_size')),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+        ])
+    else:
+        transform = transforms.Compose([
+            transforms.Resize(config.get('im_size')),
+            transforms.ToTensor()
+        ])
 
     target_train = y_train.price.apply(np.log)
     target_valid = y_valid.price.apply(np.log)
