@@ -399,7 +399,7 @@ class RealEstateModel(pl.LightningModule):
         )
         scheduler = {
             "scheduler": sched,
-            "monitor": "valid_mae",
+            "monitor": "valid_mape",
             "frequency": 1,
         }
         return {
