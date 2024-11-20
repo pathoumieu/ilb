@@ -1,0 +1,55 @@
+tags:
+  - catboost
+  - crossval
+
+image_features_version: "v10"
+use_image_features: null
+n_pca_features: null
+n_umap_features: 8
+
+clip_rooms: null
+quantile_transform: null
+n_quantiles: 100
+
+n_folds: 3
+
+size_cutoff: 1000
+dont_use_size: false
+columns_to_add:
+  - density
+  - density_department
+  - density_ratio
+  - size_ratio
+  - size_clean
+  - size_ratio_clean
+  - price_m2_type_zipcode
+  - price_m2_type_zipcode25
+  - price_m2_type_zipcode50
+  - price_m2_type_zipcode75
+  - price_m2_type_zipcode_std
+  - price_m2_type_deptcode
+  - price_m2_type_deptcode25
+  - price_m2_type_deptcode50
+  - price_m2_type_deptcode75
+  - price_m2_type_deptcode_std
+  - price_m2_type_city
+  - price_m2_type_city25
+  - price_m2_type_city50
+  - price_m2_type_city75
+  - price_m2_type_city_std
+  - nb_photos_clean
+
+pseudo_labels: null
+uncertainty_level: 1000000
+
+valid_size: 0.2
+
+model_params:
+  iterations: 2
+  loss_function: MAPE
+  eval_metric: MAPE
+  learning_rate: 0.01
+  max_depth: 6
+  one_hot_max_size: 8
+  random_seed: 0
+  verbose: False

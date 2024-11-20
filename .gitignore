@@ -1,0 +1,11 @@
+.env
+wandb*
+catboost_info
+.vscode
+venv
+data
+__pycache__
+*.ipynb*
+lightning_logs*
+artifacts
+params_mmnn.json

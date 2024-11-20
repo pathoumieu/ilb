@@ -1,0 +1,2 @@
+pytorch-tabnet==4.1.0
+pytorch-lightning==2.1.1

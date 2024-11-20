@@ -1,0 +1,104 @@
+program: train_tabnet.py
+method: random
+metric:
+  goal: minimize
+  name: MAPE_valid
+parameters:
+  valid_size:
+    value: 0.2
+  embed_scale:
+    value: -1
+  quantile_transform:
+    value: 'normal'
+  n_quantiles:
+    max: 120
+    min: 60
+    distribution: int_uniform
+  clip_rooms:
+    value: null
+  max_epochs:
+    value: 500
+  patience:
+    value: 100
+  clip_value:
+    value: 0.5
+  cycle_lr:
+    value: true
+  lr:
+    distribution: log_uniform_values
+    min: 0.0008
+    max: 0.0001
+  max_lr:
+    distribution: log_uniform_values
+    min: 0.008
+    max: 0.004
+  weight_decay:
+    distribution: log_uniform_values
+    min: 0.0005
+    max: 0.01
+  batch_size:
+    values:
+      - 512
+      - 1024
+      - 2048
+  virtual_batch_size:
+    values:
+      - 64
+      - 128
+      - 256
+  n_steps:
+    max: 3
+    min: 1
+    distribution: int_uniform
+  n_a:
+    values:
+      - 16
+      - 32
+      - 64
+  n_shared:
+    values:
+      - 2
+      - 4
+      - 8
+  gamma:
+    distribution: uniform
+    min: 0.9
+    max: 1.4
+  property_type_embed_dim:
+    max: 5
+    min: 3
+    distribution: int_uniform
+  city_embed_dim:
+    max: 10
+    min: 8
+    distribution: int_uniform
+  postal_code_embed_dim:
+    max: 9
+    min: 6
+    distribution: int_uniform
+  energy_performance_category_embed_dim:
+    max: 3
+    min: 2
+    distribution: int_uniform
+  ghg_category_embed_dim:
+    max: 3
+    min: 2
+    distribution: int_uniform
+  exposition_embed_dim:
+    max: 3
+    min: 2
+    distribution: int_uniform
+  department_embed_dim:
+    max: 7
+    min: 3
+    distribution: int_uniform
+  has_a_balcony_embed_dim:
+    value: 1
+  has_a_cellar_embed_dim:
+    value: 1
+  has_a_garage_embed_dim:
+    value: 1
+  has_air_conditioning_embed_dim:
+    value: 1
+  last_floor_embed_dim:
+    value: 1

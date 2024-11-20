@@ -1,0 +1,42 @@
+tags:
+  - tabnet
+
+valid_size: 0.2
+
+quantile_transform: 'normal'
+n_quantiles: 100
+clip_rooms: null
+embed_dims:
+  property_type_embed_dim: 4
+  city_embed_dim: 9
+  postal_code_embed_dim: 8
+  energy_performance_category_embed_dim: 2
+  ghg_category_embed_dim: 2
+  exposition_embed_dim: 2
+  department_embed_dim: 5
+  has_a_balcony_embed_dim: 1
+  has_a_cellar_embed_dim: 1
+  has_a_garage_embed_dim: 1
+  has_air_conditioning_embed_dim: 1
+  last_floor_embed_dim: 1
+  upper_floors_embed_dim: 1
+
+model_params:
+  max_epochs: 2
+  patience: 1
+  batch_size: 1024
+  virtual_batch_size: 128
+  lr: 0.02
+  cycle_lr: false
+  max_lr: 0.04
+  lr_patience: 50
+  lr_factor: 0.1
+  weight_decay: 0.00001
+  embed_scale: -1   # -1 means embedding sizes given by dictionnary, else (>0) scale by 1 / embed_scale
+  gamma: 1.1
+  n_steps: 1
+  n_a: 8
+  n_d: 8
+  n_shared: 1
+  n_independent: 1
+  clip_value: 0.5

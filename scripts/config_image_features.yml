@@ -1,0 +1,6 @@
+tags:
+  - image_features
+im_size: !!python/tuple [256,256]
+target_size: 128
+model_name: 'resnet18'
+num_workers: 8

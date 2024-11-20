@@ -1,0 +1,79 @@
+program: train_ilb.py
+method: random
+metric:
+  goal: minimize
+  name: MAPE
+parameters:
+  loss_function:
+    values:
+      - MAPE
+    distribution: categorical
+  learning_rate:
+    distribution: log_uniform_values
+    min: 0.02
+    max: 0.06
+  eval_metric:
+    values:
+      - MAPE
+    distribution: categorical
+  iterations:
+    value: 10000
+  max_depth:
+    values:
+        - 6
+        - 8
+        - 10
+        - 12
+  n_umap_features:
+    values:
+        - 4
+        - 8
+        - 16
+        - 32
+  use_image_features:
+    value: true
+  pseudo_labels:
+    value: true
+  subsample:
+    values:
+        - 0.8
+        - 0.9
+        - 1.0
+  colsample_bylevel:
+    values:
+        - 0.8
+        - 0.9
+        - 1.0
+  border_count:  # Corrected the duplicate colsample_bylevel key
+    values:
+        - 10
+        - 20
+        - 50
+  one_hot_max_size:
+    values:
+        - 2
+        - 5
+        - 10
+        - 20
+        - 50
+        - 100
+  l2_leaf_reg:
+    values:
+      - 0.01
+      - 0.1
+      - 1.0
+      - 10.0
+  uncertainty_level:
+    value: 20
+  image_features_version:
+    value: "v10"
+  valid_size:
+    value: 0.2
+  quantile_transform:
+    value: null
+  n_quantiles:
+    value: 100
+  clip_rooms:
+   value: null
+  n_pca_features:
+    value: null

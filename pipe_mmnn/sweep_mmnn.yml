@@ -1,0 +1,77 @@
+program: train_mmnn.py
+method: random
+metric:
+  goal: minimize
+  name: MAPE_valid
+parameters:
+  job:
+    values:
+      - thoumieupa/ILB/job-thoumieupa_train_ilb:latest
+    distribution: categorical
+  max_epochs:
+    value: 20
+  patience:
+    value: 5
+  lr_patience:
+    value: 3
+  lr:
+    distribution: log_uniform_values
+    min: 0.001
+    max: 0.1
+  weight_decay:
+    distribution: log_uniform_values
+    min: 0.00001
+    max: 0.001
+  batch_size:
+    values:
+      - 128
+      - 256
+      - 512
+  predict_batch_size:
+    value: 1024
+  hidden_size:
+    values:
+      - 8
+      - 16
+      - 32
+  lr_factor:
+    values:
+      - 0.5
+      - 0.1
+  batch_norm:
+    values:
+      - true
+      - false
+  dropout:
+    values:
+      - 0.0
+      - 0.1
+      - 0.2
+      - 0.3
+  loss_name:
+    values:
+      - mae
+      - mse
+  debug:
+    value: false
+  save:
+    value: true
+  num_workers:
+    value: 8
+  pretrain:
+    values:
+      - true
+      - false
+  frozen_pretrained_tabnet:
+    values:
+      - true
+      - false
+  embed_frozen_pretrained_tabnet:
+    values:
+      - true
+      - false
+  mid_level_layer:
+    values:
+      - 5
+      - 7
+      - 9

@@ -1,0 +1,67 @@
+tags:
+  - mmnn
+
+valid_size: 0.2
+
+quantile_transform: 'normal'
+
+n_quantiles: 100
+
+clip_rooms: null
+
+im_size: !!python/tuple [128,128]
+target_size: 128
+
+norm_image: true
+image_aug: true
+
+save: False
+
+num_workers: 7
+
+embed_dims:
+  property_type_embed_dim: 4
+  city_embed_dim: 9
+  postal_code_embed_dim: 8
+  energy_performance_category_embed_dim: 2
+  ghg_category_embed_dim: 2
+  exposition_embed_dim: 2
+  department_embed_dim: 5
+  has_a_balcony_embed_dim: 1
+  has_a_cellar_embed_dim: 1
+  has_a_garage_embed_dim: 1
+  has_air_conditioning_embed_dim: 1
+  last_floor_embed_dim: 1
+  upper_floors_embed_dim: 1
+
+pseudo_labels: "stellar_aardvark_uncertainty"
+uncertainty_level: 1000000
+
+model_params:
+  max_epochs: 1
+  patience: 1
+  batch_size: 128
+  predict_batch_size: 128
+  lr: 0.02
+  lr_patience: 50
+  lr_factor: 0.1
+  cycle_lr: false
+  max_lr: 0.04
+  weight_decay: 0.00001
+  hidden_size: 8
+  last_layer_size: 32
+  n_heads: 2
+  n_layers: 1
+  transformer_attention: true
+  pretrain: True  # if None : use dummy CNN, if True, use frozen MobilNet, if False, unfreeze MobileNet
+  tabnet_version: v120
+  mid_level_layer: 7
+  embed_scale: 10
+  debug: True
+  frozen_pretrained_tabnet: False
+  embed_frozen_pretrained_tabnet: True
+  dropout: 0.9
+  loss_name: mae  # mae or mse
+  batch_norm: true
+  clip_grad: 0.5
+  image_model_name: 'mobilenet'
