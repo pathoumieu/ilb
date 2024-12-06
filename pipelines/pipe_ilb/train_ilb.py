@@ -16,7 +16,7 @@ from crossval_ensemble.crossval_pipeline import CrossvalRegressionPipeline
 from sklearn.decomposition import PCA
 
 sys.path.append(os.getcwd())
-from utils import create_preprocessor, prepare_datasets, clean_up_mess, CAT_COLS, CONT_COLS
+from utils import create_preprocessor, prepare_datasets, process_and_enrich_features, CAT_COLS, CONT_COLS
 
 
 if __name__ == "__main__":
@@ -57,7 +57,7 @@ if __name__ == "__main__":
     X_test = pd.read_csv(f"{dfd}/X_test_BEhvxAN.csv")
     y_random = pd.read_csv(f"{dfd}/y_random_MhJDhKK.csv")
 
-    X_train, X_test = clean_up_mess(
+    X_train, X_test = process_and_enrich_features(
         X_train,
         X_test,
         y_train,
