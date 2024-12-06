@@ -5,7 +5,7 @@ include .env
 DOCKER_BUILD = DOCKER_BUILDKIT=1 docker build
 DOCKER_TAG = docker tag
 DOCKER_PUSH = docker push
-DOCKER_RUN = docker run -v /home/pa/projects/ilb/data:/train_ilb/data --shm-size=12g
+DOCKER_RUN = docker run -v ${PWD}/data:/train_ilb/data --shm-size=12g
 DOCKER_PS = docker ps -a
 
 # List of pipeline targets
@@ -29,7 +29,7 @@ run: $(TARGETS:%=run-%)
 define build_image
 	$(DOCKER_BUILD) \
 	--build-arg WANDB_API_KEY=${WANDB_API_KEY} \
-	-t thoumieupa/train_$1:latest -f pipe_$1/Dockerfile .
+	-t thoumieupa/train_$1:latest -f pipelines/pipe_$1/Dockerfile .
 endef
 
 # Macro to tag and push Docker images for each pipeline
