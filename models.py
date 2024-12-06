@@ -20,54 +20,95 @@ class ImageModel(nn.Module):
             dropout=0.1,
             batch_norm=True
             ):
+        """
+        Initializes the ImageModel class, which allows selecting from
+        pre-trained image models (e.g., EfficientNet, MobileNet) and customizing
+        the architecture for feature extraction and classification.
+
+        Parameters:
+        - image_model_name (str): The name of the pre-trained image model (e.g., 'tf_efficientnet_b0_ns', 'mobilenet').
+        - freeze (bool): If True, freeze the layers of the pre-trained model.
+        - mid_level_layer (int): Specifies up to which layer the pre-trained model should be used.
+        - hidden_size (int): Size of the hidden layer after feature extraction.
+        - im_size (tuple): Input image size, e.g., (224, 224) or (64, 64).
+        - dropout (float): Dropout rate for regularization.
+        - batch_norm (bool): If True, applies batch normalization after the hidden layer.
+        """
         super(ImageModel, self).__init__()
+
+        # Flag for applying batch normalization
         self.batch_norm = batch_norm
+
+        # Handle EfficientNet model selection
         if 'efficientnet' in image_model_name:
-            # Load the pre-trained EfficientNet-B0 NoisyStudent model
+            # Load pre-trained EfficientNet-B0 NoisyStudent model from timm library
             efficientnet = timm.create_model(image_model_name, pretrained=True)
 
-            # Extract layers up to the mid-level layer
+            # Extract layers up to the mid-level layer specified
             blocks = list(efficientnet.blocks.children())[:mid_level_layer]
             self.features = nn.Sequential(efficientnet.conv_stem, efficientnet.bn1, *blocks)
 
+        # Handle MobileNet model selection
         elif image_model_name == 'mobilenet':
-            # Load the pre-trained MobileNet model
+            # Load pre-trained MobileNet-V2 model from torchvision
             mobilenet = models.mobilenet_v2(weights="MobileNet_V2_Weights.DEFAULT")
 
-            # Extract layers up to the mid-level layer
+            # Extract layers up to the mid-level layer specified
             self.features = nn.Sequential(*list(mobilenet.features.children())[:mid_level_layer])
         else:
-            raise ValueError('Wrong image model name')
+            raise ValueError('Wrong image model name. Choose from "efficientnet" or "mobilenet".')
 
-        # Freeze the layers if specified
+        # Freeze the layers if freeze flag is set to True
         if freeze:
             for param in self.features.parameters():
                 param.requires_grad = False
 
-        # Flatten the output
+        # Flatten the output from convolutional layers
         self.flatten = nn.Flatten()
 
-        # BatchNorm after the linear layer
+        # BatchNorm applied to the fully connected layer after feature extraction
         self.batch_norm = nn.BatchNorm1d(hidden_size)
 
-        # Get the number of output channels at the specified mid_level_layer
-        dummy_input = torch.randn(1, 3, *im_size)  # Assuming input size of 224x224
+        # Get the number of output channels at the specified mid-level layer
+        dummy_input = torch.randn(1, 3, *im_size)  # Assuming input size of (3, 224, 224)
         mid_level_output = self.flatten(self.features(dummy_input))
         num_channels = mid_level_output.size(1)
 
-        # Additional trainable fully connected layer
+        # Additional fully connected layer after feature extraction
         self.additional_fc = nn.Linear(num_channels, hidden_size)
 
+        # Dropout layer for regularization
         self.dropout = nn.Dropout(dropout)
 
     def forward(self, x):
+        """
+        Forward pass for the model.
+
+        Parameters:
+        - x (torch.Tensor): Input tensor with shape (batch_size, 3, height, width).
+
+        Returns:
+        - torch.Tensor: The output tensor after the forward pass with shape (batch_size, hidden_size).
+        """
+        # Pass through the feature extractor (EfficientNet or MobileNet up to mid-level layer)
         x = self.features(x)
+
+        # Flatten the features into a 1D vector for each image
         x = self.flatten(x)
+
+        # Pass through the additional fully connected layer
         x = self.additional_fc(x)
+
+        # Apply batch normalization if enabled
         if self.batch_norm:
             x = self.batch_norm(x)
+
+        # Apply ReLU activation
         x = F.relu(x)
+
+        # Apply dropout for regularization
         x = self.dropout(x)
+
         return x
 
 
