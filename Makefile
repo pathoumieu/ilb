@@ -29,18 +29,18 @@ run: $(TARGETS:%=run-%)
 define build_image
 	$(DOCKER_BUILD) \
 	--build-arg WANDB_API_KEY=${WANDB_API_KEY} \
-	-t thoumieupa/train_$1:latest -f pipelines/pipe_$1/Dockerfile .
+	-t pathoumieu/train_$1:latest -f pipelines/pipe_$1/Dockerfile .
 endef
 
 # Macro to tag and push Docker images for each pipeline
 define tag_and_push_image
-	$(DOCKER_TAG) thoumieupa/train_$1 thoumieupa/train_$1:latest
-	$(DOCKER_PUSH) thoumieupa/train_$1:latest
+	$(DOCKER_TAG) pathoumieu/train_$1 pathoumieu/train_$1:latest
+	$(DOCKER_PUSH) pathoumieu/train_$1:latest
 endef
 
 # Macro to run Docker containers for each pipeline
 define run_docker
-	$(DOCKER_RUN) thoumieupa/train_$1:latest
+	$(DOCKER_RUN) pathoumieu/train_$1:latest
 endef
 
 # Macro to run Docker containers with environment variables
@@ -49,8 +49,8 @@ define run_docker_with_env
 	-e WANDB_PROJECT=${WANDB_PROJECT} \
 	-e WANDB_ENTITY=${WANDB_ENTITY} \
 	-e WANDB_API_KEY=${WANDB_API_KEY} \
-	-e WANDB_DOCKER=thoumieupa/train_$1:latest \
-	thoumieupa/train_$1:latest
+	-e WANDB_DOCKER=pathoumieu/train_$1:latest \
+	pathoumieu/train_$1:latest
 endef
 
 # Make rules for each pipeline: build, push, run

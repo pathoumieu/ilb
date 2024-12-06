@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.4
 
-FROM thoumieupa/train_tabnet:latest
+FROM pathoumieu/train_tabnet:latest
 RUN apt update && apt install gcc -y && apt install -y git
 
 RUN pip install --upgrade pip

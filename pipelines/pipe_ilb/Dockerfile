@@ -1,6 +1,7 @@
 # syntax=docker/dockerfile:1.4
 
-FROM thoumieupa/train_base:latest
+# Use the official Python 3.10 image from Docker Hub
+FROM python:3.10
 RUN apt update && apt install gcc -y && apt install -y git
 
 RUN pip install --upgrade pip
