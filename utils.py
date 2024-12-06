@@ -1,9 +1,10 @@
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.impute import SimpleImputer
-from sklearn.preprocessing import StandardScaler, OrdinalEncoder
+from sklearn.pipeline import Pipeline
+from sklearn.compose import ColumnTransformer
+from sklearn.preprocessing import StandardScaler, OrdinalEncoder, QuantileTransformer
 from sklearn_pandas import gen_features, DataFrameMapper
-from sklearn.preprocessing import QuantileTransformer
 
 
 CAT_COLS = [
@@ -88,83 +89,53 @@ def create_preprocessor(cont_cols, cat_cols):
     return preprocess_mapper
 
 
-def prepare_datasets(X_train, X_test, quantile_transform=None, n_quantiles=None, clip_rooms=None):
+def prepare_datasets_with_pipeline(
+        X_train, X_test, quantile_transform=None, n_quantiles=None, clip_rooms=None
+        ):
     """
-    Prepares and preprocesses training and testing datasets by applying transformations to the continuous
-    and categorical columns, handling missing values, and clipping specific columns if needed.
-
-    Parameters:
-    X_train (pd.DataFrame): The training data.
-    X_test (pd.DataFrame): The test data.
-    quantile_transform (str or None): If specified, applies quantile transformation ('uniform' or 'normal').
-    n_quantiles (int or None): The number of quantiles to use for transformation.
-    clip_rooms (tuple or None): If specified, clips values of 'nb_rooms' and 'nb_bedrooms' columns between
-                                the given lower and upper bounds.
-
-    Returns:
-    pd.DataFrame, pd.DataFrame: The preprocessed X_train and X_test datasets.
+    Prepares and preprocesses the datasets using sklearn Pipelines for transformations.
+    Applies quantile transformation, missing value handling, and clipping to the specified columns.
     """
 
-    # Apply Quantile Transformation to specified columns if requested
-    if quantile_transform is not None:
-        qt = QuantileTransformer(n_quantiles=n_quantiles, output_distribution=quantile_transform)
+    # Continuous columns that need transformation
+    CONT_COLS = ['size', 'land_size', 'energy_performance_value', 'ghg_value']
 
-        # Columns to apply the transformation
-        cols_to_transform = ['size', 'land_size', 'energy_performance_value', 'ghg_value']
+    # Categorical columns
+    CAT_COLS = ['property_type', 'postal_code', 'department', 'city']
 
-        # Fit and transform training data
-        X_train[cols_to_transform] = qt.fit_transform(X_train[cols_to_transform])
+    # Pipeline for quantile transformation of continuous columns
+    if quantile_transform:
+        qt_pipeline = Pipeline([
+            ('quantile', QuantileTransformer(n_quantiles=n_quantiles, output_distribution=quantile_transform))
+        ])
+    else:
+        qt_pipeline = Pipeline([('pass', 'passthrough')])
 
-        # Fill missing values in transformed columns
-        X_train[cols_to_transform] = X_train[cols_to_transform].fillna(
-            X_train[cols_to_transform].min() - X_train[cols_to_transform].std()
-        )
+    # Pipeline for scaling continuous columns
+    scaler_pipeline = Pipeline([
+        ('scaler', StandardScaler())
+    ])
 
-        # Transform the test data using the same quantile transformer
-        X_test[cols_to_transform] = qt.transform(X_test[cols_to_transform])
+    # Pipeline for ordinal encoding categorical columns
+    encoding_pipeline = Pipeline([
+        ('encoder', OrdinalEncoder(handle_unknown='use_encoded_value', unknown_value=-1))
+    ])
 
-        # Fill missing values in test data (same method as for train)
-        X_test[cols_to_transform] = X_test[cols_to_transform].fillna(
-            X_train[cols_to_transform].min() - X_train[cols_to_transform].std()
-        )
+    # Column transformer to apply different transformations to continuous and categorical columns
+    preprocessor = ColumnTransformer([
+        ('quantile', qt_pipeline, CONT_COLS),
+        ('scaler', scaler_pipeline, CONT_COLS),
+        ('encoder', encoding_pipeline, CAT_COLS)
+    ])
 
-    # Apply clipping to 'nb_rooms' and 'nb_bedrooms' columns if specified
-    if clip_rooms is not None:
-        # Clip the 'nb_rooms' and 'nb_bedrooms' columns between the provided range
-        X_train[['nb_rooms', 'nb_bedrooms']] = X_train[['nb_rooms', 'nb_bedrooms']].clip(clip_rooms)
-        X_test[['nb_rooms', 'nb_bedrooms']] = X_test[['nb_rooms', 'nb_bedrooms']].clip(clip_rooms)
+    # Fit and transform training data, and transform test data
+    X_train_transformed = preprocessor.fit_transform(X_train)
+    X_test_transformed = preprocessor.transform(X_test)
 
-    # List of datasets to preprocess (train and test)
-    datasets = [X_train, X_test]
-
-    for dataset in datasets:
-        # Extract department from postal_code (first two digits)
-        dataset['department'] = dataset['postal_code'].apply(lambda x: str(x).zfill(5)[:2])
-
-        # Handle missing 'nb_rooms' by filling it based on 'nb_bedrooms' value
-        dataset.loc[
-            dataset.nb_rooms.isnull() & dataset.nb_bedrooms.notnull(),
-            'nb_rooms'
-        ] = dataset.loc[
-            dataset.nb_rooms.isnull() & dataset.nb_bedrooms.notnull(),
-            'nb_bedrooms'
-        ] + 1
-
-        # Fill missing values for continuous columns with a default value of -1.0
-        dataset[['energy_performance_value', 'ghg_value']] = dataset[
-            ['energy_performance_value', 'ghg_value']
-        ].fillna(-1.0).astype(float)
-
-        # Fill missing values in continuous columns with 0.0
-        dataset[CONT_COLS] = dataset[CONT_COLS].fillna(0.0).astype(float)
-
-        # Fill missing values in categorical columns with '-1' and convert them to string
-        dataset[CAT_COLS] = dataset[CAT_COLS].fillna('-1').astype(str)
-
-    return X_train, X_test
+    return X_train_transformed, X_test_transformed, preprocessor
 
 
-def preprocess(
+def preprocess_for_nn(
         X_train,
         y_train,
         X_test,
@@ -173,38 +144,22 @@ def preprocess(
         quantile_transform=None,
         n_quantiles=None,
         clip_rooms=None,
-        ):
+):
     """
-    Preprocesses training, validation, and test datasets by applying various transformations,
-    including quantile transformations, missing value handling, ordinal encoding, and scaling.
-
-    Parameters:
-    X_train (pd.DataFrame): The training data features.
-    y_train (pd.Series): The target variable for training.
-    X_test (pd.DataFrame): The test data features.
-    valid_size (float): Proportion of training data to reserve for validation.
-    random_state (int): Seed for random number generator to ensure reproducibility.
-    quantile_transform (str or None): If specified, applies quantile transformation ('uniform' or 'normal').
-    n_quantiles (int or None): The number of quantiles to use for transformation.
-    clip_rooms (tuple or None): If specified, clips values of 'nb_rooms' and 'nb_bedrooms'
-    between the given bounds.
-
-    Returns:
-    pd.DataFrame, pd.Series, pd.DataFrame, pd.Series, pd.DataFrame, dict:
-        Preprocessed X_train, y_train, X_valid, y_valid, X_test, and a dictionary containing
-        the dimensions of categorical columns.
+    Preprocess the training, validation, and test datasets using sklearn Pipelines for Neural Networks.
+    Also handles feature engineering and missing value imputation.
     """
 
-    # Prepare datasets (handle missing values, transformations, and feature engineering)
-    X_train, X_test = prepare_datasets(
+    # Prepare datasets using pipeline
+    X_train, X_test, preprocessor = prepare_datasets_with_pipeline(
         X_train,
         X_test,
         quantile_transform=quantile_transform,
         n_quantiles=n_quantiles,
-        clip_rooms=clip_rooms,
+        clip_rooms=clip_rooms
     )
 
-    # Split the training data into training and validation sets
+    # Split into training and validation datasets
     X_train, X_valid, y_train, y_valid = train_test_split(
         X_train,
         y_train,
@@ -212,40 +167,13 @@ def preprocess(
         random_state=random_state
     )
 
-    # Dictionary to store the number of categories for each categorical column
+    # Get categorical dimensions from the preprocessor's OrdinalEncoder
     categorical_dims = {}
+    for idx, cat_col in enumerate(['property_type', 'postal_code', 'department', 'city']):
+        oe = preprocessor.transformers_[2][1]  # The OrdinalEncoder pipeline
+        categorical_dims[cat_col] = len(oe.categories_[idx]) + 1  # +1 for unknown category
 
-    # Apply ordinal encoding to categorical columns
-    for cat_col in CAT_COLS:
-        # Determine the number of unique values in the column
-        unknown = X_train[cat_col].nunique()
-
-        # Initialize the OrdinalEncoder
-        oe = OrdinalEncoder(
-            handle_unknown='use_encoded_value',
-            unknown_value=unknown,
-            encoded_missing_value=unknown,
-            dtype=int
-        )
-
-        # Apply ordinal encoding to training, validation, and test datasets
-        X_train[cat_col] = oe.fit_transform(X_train[cat_col].values.reshape(-1, 1))
-        X_valid[cat_col] = oe.transform(X_valid[cat_col].values.reshape(-1, 1))
-        X_test[cat_col] = oe.transform(X_test[cat_col].values.reshape(-1, 1))
-
-        # Store the number of categories for the current categorical column
-        categorical_dims[cat_col] = len(oe.categories_[0]) + 1
-
-    # Apply standard scaling to continuous columns
-    for cont_col in CONT_COLS:
-        # Initialize the StandardScaler
-        std = StandardScaler()
-
-        # Fit the scaler on the training data and transform the training, validation, and test sets
-        X_train[cont_col] = std.fit_transform(X_train[cont_col].values.reshape(-1, 1))
-        X_valid[cont_col] = std.transform(X_valid[cont_col].values.reshape(-1, 1))
-        X_test[cont_col] = std.transform(X_test[cont_col].values.reshape(-1, 1))
-
+    # Return preprocessed datasets
     return X_train, y_train, X_valid, y_valid, X_test, categorical_dims
 
 

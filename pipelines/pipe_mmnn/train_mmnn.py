@@ -11,7 +11,7 @@ from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 from pytorch_lightning.callbacks import ModelCheckpoint
 
 sys.path.append(os.getcwd())
-from utils import CAT_COLS, CONT_COLS, preprocess
+from utils import CAT_COLS, CONT_COLS, preprocess_for_nn
 from utils_torch import get_dataloader, load_trained_tabnet
 from models import RealEstateModel, resize_with_padding
 
@@ -64,7 +64,7 @@ if __name__ == "__main__":
         y_random = pd.read_csv(f"{dfd}/y_random_MhJDhKK.csv")
 
     # Preprocess
-    X_train, y_train, X_valid, y_valid, X_test, categorical_dims = preprocess(
+    X_train, y_train, X_valid, y_valid, X_test, categorical_dims = preprocess_for_nn(
         X_train,
         y_train,
         X_test,

@@ -8,7 +8,7 @@ from pytorch_tabnet.tab_model import TabNetRegressor
 from sklearn.metrics import mean_absolute_percentage_error as MAPE
 
 sys.path.append(os.getcwd())
-from utils import CAT_COLS, CONT_COLS, preprocess
+from utils import CAT_COLS, CONT_COLS, preprocess_for_nn
 from utils_torch import WandbCallback, tabnet_mape
 
 
@@ -54,7 +54,7 @@ if __name__ == "__main__":
     y_random = pd.read_csv(f"{dfd}/y_random_MhJDhKK.csv")
 
     # Preprocess
-    X_train, y_train, X_valid, y_valid, X_test, categorical_dims = preprocess(
+    X_train, y_train, X_valid, y_valid, X_test, categorical_dims = preprocess_for_nn(
         X_train,
         y_train,
         X_test,
