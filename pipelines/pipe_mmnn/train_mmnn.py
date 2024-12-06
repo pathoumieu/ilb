@@ -11,9 +11,9 @@ from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 from pytorch_lightning.callbacks import ModelCheckpoint
 
 sys.path.append(os.getcwd())
-from utils import CAT_COLS, CONT_COLS, preprocess_for_nn
+from utils import CAT_COLS, CONT_COLS, preprocess_for_nn, resize_with_padding
 from utils_torch import get_dataloader, load_trained_tabnet
-from models import RealEstateModel, resize_with_padding
+from models import RealEstateModel
 
 
 if __name__ == "__main__":

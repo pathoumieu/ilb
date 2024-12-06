@@ -1,42 +1,12 @@
+import timm
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import pytorch_lightning as pl
 from torchvision import models
-from torchvision.transforms.functional import resize, pad
 from pytorch_tabnet.tab_network import TabNet
-from icecream import ic
-import timm
 
 from utils_torch import MAPE
-
-
-def resize_with_padding(img, target_size):
-    # Calculate the aspect ratio of the original image
-    original_width, original_height = img.size
-    aspect_ratio = original_width / original_height
-
-    # Calculate the new dimensions while preserving the aspect ratio
-    if aspect_ratio > 1:
-        new_width = int(target_size * aspect_ratio)
-        new_height = target_size
-    else:
-        new_width = target_size
-        new_height = int(target_size / aspect_ratio)
-
-    # Resize the image while preserving the aspect ratio
-    img_resized = resize(img, (new_height, new_width))
-
-    # Calculate the padding
-    pad_left = (target_size - new_width) // 2
-    pad_top = (target_size - new_height) // 2
-    pad_right = target_size - new_width - pad_left
-    pad_bottom = target_size - new_height - pad_top
-
-    # Pad the image
-    img_padded = pad(img_resized, (pad_left, pad_top, pad_right, pad_bottom), fill=255)
-
-    return img_padded
 
 
 class ImageModel(nn.Module):
@@ -145,7 +115,7 @@ class SimpleEncoder(nn.Module):
         ])
 
         # Fully connected layers
-        self.fc1 = nn.Linear(input_size -len(self.cat_idxs) + sum(cat_emb_dims), encoder_hidden_size)
+        self.fc1 = nn.Linear(input_size - len(self.cat_idxs) + sum(cat_emb_dims), encoder_hidden_size)
         self.bn1 = nn.BatchNorm1d(encoder_hidden_size)
 
         self.fc2 = nn.Linear(encoder_hidden_size, encoder_hidden_size // 2)
@@ -234,7 +204,8 @@ class GatedImageAttention(nn.Module):
         gating_values = self.dropout(gating_values)
 
         # Apply gated attention
-        gated_image_representation = (attention_weights * gating_values).unsqueeze(2) * image_features_sequence.unsqueeze(-1)
+        gated_image_representation = (attention_weights * gating_values).unsqueeze(2) *\
+            image_features_sequence.unsqueeze(-1)
         gated_image_representation = gated_image_representation.sum(dim=1)
 
         gated_image_representation = self.flatten(gated_image_representation)
@@ -357,16 +328,6 @@ class RealEstateModel(pl.LightningModule):
         else:
             self.tabular_model = TabNetEncoder(pretrained_tabnet).to(self.device_name)
             out_size = self.tabular_model.out_features
-        # self.tabular_model = SimpleEncoder(
-        #     tabular_input_size,
-        #     cat_idxs,
-        #     cat_dims,
-        #     cat_emb_dim,
-        #     encoder_hidden_size=512,
-        #     output_size=128,
-        #     dropout_prob=dropout
-        #     ).to(self.device_name)
-        # out_size = self.tabular_model.output_size
 
         # Image model with modified structure
         if pretrain is not None:
@@ -386,15 +347,20 @@ class RealEstateModel(pl.LightningModule):
                 nn.ReLU(),
                 nn.MaxPool2d(kernel_size=2, stride=2),
                 nn.Flatten(),
-                nn.Linear(int(16 * im_size[0] * im_size[1] / 4), hidden_size)  # Adjusted to match with the hidden size
+                nn.Linear(int(16 * im_size[0] * im_size[1] / 4), hidden_size)  # Adjusted to match
+                                                                               # with the hidden size
             ).to(self.device_name)
 
         # Attention mechanism
         # self.attention = SimpleAttentionModule(self.hidden_size, self.dropout)
         if self.transformer_attention:
-            self.attention = ImageTransformer(self.n_heads, self.hidden_size, self.n_layers, self.dropout).to(self.device_name)
+            self.attention = ImageTransformer(
+                self.n_heads, self.hidden_size, self.n_layers, self.dropout
+                ).to(self.device_name)
         else:
-            self.attention = GatedImageAttention(self.hidden_size, self.n_heads, self.dropout).to(self.device_name)
+            self.attention = GatedImageAttention(
+                self.hidden_size, self.n_heads, self.dropout
+                ).to(self.device_name)
 
         # Combined model
         self.fc_combined = nn.Sequential(
@@ -453,7 +419,9 @@ class RealEstateModel(pl.LightningModule):
         mape = MAPE(outputs, targets)
         # clip gradients
         if self.clip_grad is not None:
-            self.clip_gradients(self.optimizer, gradient_clip_val=self.clip_grad, gradient_clip_algorithm="norm")
+            self.clip_gradients(
+                self.optimizer, gradient_clip_val=self.clip_grad, gradient_clip_algorithm="norm"
+                )
         self.log(f'train_{self.loss_name}', loss, prog_bar=True)    # Log MAE/MSE
         self.log('train_mape', mape, prog_bar=False)
         return loss
@@ -463,7 +431,7 @@ class RealEstateModel(pl.LightningModule):
         outputs = self(tabular_data, image_data)
         loss = self.loss_func(outputs, targets)
         mape = MAPE(outputs, targets)
-        self.log(f'valid_{self.loss_name}', loss, prog_bar=True, on_step=False, on_epoch=True)    # Log MAE/MSE
+        self.log(f'valid_{self.loss_name}', loss, prog_bar=True, on_step=False, on_epoch=True)    # Log metric
         self.log('valid_mape', mape, prog_bar=False, on_step=False, on_epoch=True)
         self.log("learning_rate", self.optimizer.param_groups[0]['lr'], on_step=False, on_epoch=True)
         return loss

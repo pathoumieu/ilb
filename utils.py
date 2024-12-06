@@ -5,6 +5,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import StandardScaler, OrdinalEncoder, QuantileTransformer
 from sklearn_pandas import gen_features, DataFrameMapper
+from torchvision.transforms.functional import resize, pad
 
 
 CAT_COLS = [
@@ -333,3 +334,42 @@ def process_and_enrich_features(X_train, X_test, y_train, size_cutoff=1000, vali
 
     # Return the cleaned and enriched datasets
     return X.loc[:len(X_train) - 1], X.loc[len(X_train):]
+
+
+def resize_with_padding(img, target_size):
+    """
+    Resizes an image to the target size while preserving the aspect ratio,
+    and adds padding to ensure the final dimensions match the target size.
+
+    Parameters:
+    img (PIL.Image): The input image to be resized and padded.
+    target_size (int): The target size (width and height) of the output image.
+
+    Returns:
+    PIL.Image: The resized and padded image.
+    """
+    # Calculate the aspect ratio of the original image
+    original_width, original_height = img.size
+    aspect_ratio = original_width / original_height
+
+    # Calculate the new dimensions while preserving the aspect ratio
+    if aspect_ratio > 1:
+        new_width = int(target_size * aspect_ratio)
+        new_height = target_size
+    else:
+        new_width = target_size
+        new_height = int(target_size / aspect_ratio)
+
+    # Resize the image while preserving the aspect ratio
+    img_resized = resize(img, (new_height, new_width))
+
+    # Calculate the padding
+    pad_left = (target_size - new_width) // 2
+    pad_top = (target_size - new_height) // 2
+    pad_right = target_size - new_width - pad_left
+    pad_bottom = target_size - new_height - pad_top
+
+    # Pad the image
+    img_padded = pad(img_resized, (pad_left, pad_top, pad_right, pad_bottom), fill=255)
+
+    return img_padded
