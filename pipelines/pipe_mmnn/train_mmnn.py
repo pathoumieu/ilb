@@ -23,7 +23,7 @@ from models.lightning_model import RealEstateModel  # noqa
 
 if __name__ == "__main__":
 
-    config_file_dir = os.environ.get("CONFIG_FILE_DIR", f"{os.getcwd()}/pipe_mmnn")
+    config_file_dir = os.environ.get("CONFIG_FILE_DIR", f"{os.getcwd()}/pipelines/pipe_mmnn")
     data_file_dir = os.environ.get("DATA_FILE_DIR", f"{os.getcwd()}/data")
 
     parser = argparse.ArgumentParser(description='')

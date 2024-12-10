@@ -117,7 +117,7 @@ def process_image_features(X_train, X_test, CONT_COLS, config, run):
 
 if __name__ == "__main__":
 
-    config_file_dir = os.environ.get("CONFIG_FILE_DIR", f"{os.getcwd()}/pipe_ilb")
+    config_file_dir = os.environ.get("CONFIG_FILE_DIR", f"{os.getcwd()}/pipelines/pipe_ilb")
     data_file_dir = os.environ.get("DATA_FILE_DIR", f"{os.getcwd()}/data")
 
     parser = argparse.ArgumentParser(description='')

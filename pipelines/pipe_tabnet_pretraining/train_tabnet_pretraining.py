@@ -17,7 +17,7 @@ from models.model_utils import WandbCallback, tabnet_mape  # noqa
 
 if __name__ == "__main__":
 
-    config_file_dir = os.environ.get("CONFIG_FILE_DIR", f"{os.getcwd()}/pipe_tabnet")
+    config_file_dir = os.environ.get("CONFIG_FILE_DIR", f"{os.getcwd()}/pipelines/pipe_tabnet")
     data_file_dir = os.environ.get("DATA_FILE_DIR", f"{os.getcwd()}/data")
 
     parser = argparse.ArgumentParser(description='')
