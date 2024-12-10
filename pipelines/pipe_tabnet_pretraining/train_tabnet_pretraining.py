@@ -11,7 +11,7 @@ from pytorch_tabnet.tab_model import TabNetRegressor
 from sklearn.metrics import mean_absolute_percentage_error as MAPE
 
 sys.path.append(os.getcwd())
-from utils import CAT_COLS, CONT_COLS, preprocess_for_nn  # noqa
+from preprocessing import CAT_COLS, CONT_COLS, preprocess_for_nn  # noqa
 from models.model_utils import WandbCallback, tabnet_mape  # noqa
 
 

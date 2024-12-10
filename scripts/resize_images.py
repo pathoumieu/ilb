@@ -2,7 +2,7 @@ import os
 from PIL import Image
 from pathlib import Path
 from tqdm import tqdm
-from utils import resize_with_padding
+from preprocessing import resize_with_padding
 
 TARGET_SIZE = 128
 

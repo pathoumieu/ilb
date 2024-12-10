@@ -14,7 +14,7 @@ from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 from pytorch_lightning.callbacks import ModelCheckpoint
 
 sys.path.append(os.getcwd())
-from utils import CAT_COLS, CONT_COLS, preprocess_for_nn, resize_with_padding  # noqa
+from preprocessing import CAT_COLS, CONT_COLS, preprocess_for_nn, resize_with_padding  # noqa
 from models.data_loader import get_dataloader  # noqa
 from models.model_utils import load_trained_tabnet  # noqa
 from models.lightning_model import RealEstateModel  # noqa

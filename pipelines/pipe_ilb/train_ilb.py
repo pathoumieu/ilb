@@ -17,7 +17,7 @@ from crossval_ensemble.crossval_pipeline import CrossvalRegressionPipeline
 from sklearn.decomposition import PCA
 
 sys.path.append(os.getcwd())
-from utils import create_preprocessor, prepare_datasets, process_and_enrich_features, CAT_COLS, CONT_COLS  # noqa
+from preprocessing import create_preprocessor, prepare_datasets, process_and_enrich_features, CAT_COLS, CONT_COLS  # noqa
 
 
 if __name__ == "__main__":

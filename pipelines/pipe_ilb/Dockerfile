@@ -18,7 +18,7 @@ ENV DATA_FILE_DIR=./data
 
 
 COPY --link pipelines/pipe_ilb/train_ilb.py ./
-COPY --link utils.py ./
+COPY --link preprocessing.py ./
 COPY --link pipelines/pipe_ilb/config.yml ./
 
 COPY --link data/X_train_J01Z4CN.csv ./data/
