@@ -22,11 +22,11 @@ from models.lightning_model import RealEstateModel  # noqa
 
 if __name__ == "__main__":
 
-    cfd = os.environ.get("CONFIG_FILE_DIR", f"{os.getcwd()}/pipe_mmnn")
-    dfd = os.environ.get("DATA_FILE_DIR", f"{os.getcwd()}/data")
+    config_file_dir = os.environ.get("CONFIG_FILE_DIR", f"{os.getcwd()}/pipe_mmnn")
+    data_file_dir = os.environ.get("DATA_FILE_DIR", f"{os.getcwd()}/data")
 
     parser = argparse.ArgumentParser(description='')
-    parser.add_argument('--config-path', type=str, help='', default=f'{cfd}/config.yml')
+    parser.add_argument('--config-path', type=str, help='', default=f'{config_file_dir}/config.yml')
     parser.add_argument('--run-name', type=str, help='', default=None)
 
     args = vars(parser.parse_args())
@@ -57,15 +57,15 @@ if __name__ == "__main__":
 
     # Load the tabular data
     if config.get('debug'):
-        X_train = pd.read_csv(f"{dfd}/X_train_J01Z4CN.csv").sample(frac=0.01)
-        y_train = pd.read_csv(f"{dfd}/y_train_OXxrJt1.csv").iloc[X_train.index]
-        X_test = pd.read_csv(f"{dfd}/X_test_BEhvxAN.csv").sample(frac=0.01)
-        y_random = pd.read_csv(f"{dfd}/y_random_MhJDhKK.csv").iloc[X_test.index]
+        X_train = pd.read_csv(f"{data_file_dir}/X_train_J01Z4CN.csv").sample(frac=0.01)
+        y_train = pd.read_csv(f"{data_file_dir}/y_train_OXxrJt1.csv").iloc[X_train.index]
+        X_test = pd.read_csv(f"{data_file_dir}/X_test_BEhvxAN.csv").sample(frac=0.01)
+        y_random = pd.read_csv(f"{data_file_dir}/y_random_MhJDhKK.csv").iloc[X_test.index]
     else:
-        X_train = pd.read_csv(f"{dfd}/X_train_J01Z4CN.csv")
-        y_train = pd.read_csv(f"{dfd}/y_train_OXxrJt1.csv")
-        X_test = pd.read_csv(f"{dfd}/X_test_BEhvxAN.csv")
-        y_random = pd.read_csv(f"{dfd}/y_random_MhJDhKK.csv")
+        X_train = pd.read_csv(f"{data_file_dir}/X_train_J01Z4CN.csv")
+        y_train = pd.read_csv(f"{data_file_dir}/y_train_OXxrJt1.csv")
+        X_test = pd.read_csv(f"{data_file_dir}/X_test_BEhvxAN.csv")
+        y_random = pd.read_csv(f"{data_file_dir}/y_random_MhJDhKK.csv")
 
     # Preprocess
     X_train, y_train, X_valid, y_valid, X_test, categorical_dims = preprocess_for_nn(
@@ -233,10 +233,10 @@ if __name__ == "__main__":
     if config.get('save'):
         predictions = trainer.predict(best_model, dataloaders=dataloader_test)
         y_random['price'] = np.exp(np.concatenate(predictions)).flatten()
-        y_random.to_csv(f'{dfd}/submission.csv', index=False)
+        y_random.to_csv(f'{data_file_dir}/submission.csv', index=False)
 
         artifact = wandb.Artifact(name="submission", type="test predictions")
-        artifact.add_file(local_path=f'{dfd}/submission.csv')
+        artifact.add_file(local_path=f'{data_file_dir}/submission.csv')
         run.log_artifact(artifact)
 
         artifact = wandb.Artifact(name="mmnn_model", type="model")
