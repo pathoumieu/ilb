@@ -8,7 +8,7 @@ COPY --link pipelines/pipe_mmnn/requirements.txt ./
 RUN pip install -r requirements.txt
 
 COPY --link pipelines/pipe_mmnn/train_mmnn.py ./
-COPY --link preprocessing.py ./
+COPY --link preprocess/ ./
 COPY --link models/ ./
 COPY --link pipelines/pipe_mmnn/config.yml ./
 

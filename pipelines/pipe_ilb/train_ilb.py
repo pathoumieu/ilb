@@ -17,7 +17,8 @@ from crossval_ensemble.crossval_pipeline import CrossvalRegressionPipeline
 from sklearn.decomposition import PCA
 
 sys.path.append(os.getcwd())
-from preprocessing import create_preprocessor, prepare_datasets, process_and_enrich_features, CAT_COLS, CONT_COLS  # noqa
+from preprocess.pseudo_labels import add_pseudo_labels  # noqa
+from preprocess.preprocess import create_preprocessor, prepare_datasets, process_and_enrich_features, CAT_COLS, CONT_COLS  # noqa
 
 
 if __name__ == "__main__":
@@ -120,20 +121,8 @@ if __name__ == "__main__":
         X_train, y_train, test_size=config.get('valid_size'), random_state=0
         )
 
-    if config.get('pseudo_labels'):
-        if type(config.get('pseudo_labels')) is bool:
-            pseudo_label_names = "submission_peach_salad_mild_feather_stack7030_uncertainty"
-        else:
-            pseudo_label_names = config.get('pseudo_labels')
-        artifact = run.use_artifact(f'{pseudo_label_names}:v0')
-        datadir = artifact.download()
-        pseudo_labels = pd.read_csv(datadir + f'/{pseudo_label_names}.csv')
-        ul = config.get('uncertainty_level')
-        X_train = pd.concat([X_train, X_test[pseudo_labels.uncertainty < ul]], axis=0)
-        y_train = pd.concat([
-            y_train,
-            pseudo_labels.loc[pseudo_labels.uncertainty < ul,  ['id_annonce', 'price']]
-            ], axis=0)
+    # Add pseudo labels to enrich data
+    X_train, y_train = add_pseudo_labels(X_train, X_test, y_train, run, config)
 
     preprocess_mapper = create_preprocessor(cont_cols, CAT_COLS)
 

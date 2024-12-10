@@ -14,7 +14,8 @@ from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 from pytorch_lightning.callbacks import ModelCheckpoint
 
 sys.path.append(os.getcwd())
-from preprocessing import CAT_COLS, CONT_COLS, preprocess_for_nn, resize_with_padding  # noqa
+from preprocess.pseudo_labels import add_pseudo_labels  # noqa
+from preprocess.preprocess import CAT_COLS, CONT_COLS, preprocess_for_nn, resize_with_padding  # noqa
 from models.data_loader import get_dataloader  # noqa
 from models.model_utils import load_trained_tabnet  # noqa
 from models.lightning_model import RealEstateModel  # noqa
@@ -84,20 +85,8 @@ if __name__ == "__main__":
     cat_emb_dim = [embed_dims[f] for f in CAT_COLS]
     cols = CAT_COLS + CONT_COLS
 
-    if config.get('pseudo_labels'):
-        if type(config.get('pseudo_labels')) is bool:
-            pseudo_label_names = "submission_peach_salad_mild_feather_stack7030_uncertainty"
-        else:
-            pseudo_label_names = config.get('pseudo_labels')
-        artifact = run.use_artifact(f'{pseudo_label_names}:v0')
-        datadir = artifact.download()
-        pseudo_labels = pd.read_csv(datadir + f'/{pseudo_label_names}.csv')
-        ul = config.get('uncertainty_level')
-        X_train = pd.concat([X_train, X_test[pseudo_labels.uncertainty < ul]], axis=0)
-        y_train = pd.concat([
-            y_train,
-            pseudo_labels.loc[pseudo_labels.uncertainty < ul,  ['id_annonce', 'price']]
-            ], axis=0)
+    # Add pseudo labels to enrich data
+    X_train, y_train = add_pseudo_labels(X_train, X_test, y_train, run, config)
 
     # Assuming you have X_train, y_train, and the image folder directory
     # Create transforms for image processing

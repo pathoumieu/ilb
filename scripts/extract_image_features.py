@@ -11,7 +11,7 @@ from torchvision.models.vision_transformer import vit_l_16
 from torchvision.models import ViT_L_16_Weights
 import torch.nn.functional as F
 import timm
-from preprocessing import resize_with_padding
+from preprocess.preprocess import resize_with_padding
 
 
 def load_efficientnet_model(model_name='tf_efficientnet_b1_ns', pretrained=True):

@@ -8,7 +8,7 @@ COPY --link pipelines/pipe_tabnet/requirements.txt ./
 RUN pip install -r requirements.txt
 
 COPY --link pipelines/pipe_tabnet/train_tabnet.py ./
-COPY --link preprocessing.py ./
+COPY --link preprocess/ ./
 COPY --link models ./
 COPY --link pipelines/pipe_tabnet/config.yml ./
 
