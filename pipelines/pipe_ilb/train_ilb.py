@@ -67,7 +67,7 @@ if __name__ == "__main__":
         random_state=0
         )
 
-    X_train, X_test, _ = prepare_datasets(
+    X_train, X_test = prepare_datasets(
         X_train,
         X_test,
         quantile_transform=config.get('quantile_tranform'),
