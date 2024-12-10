@@ -1,4 +1,7 @@
-import os, yaml, argparse, sys
+import os
+import sys
+import yaml
+import argparse
 import wandb
 import numpy as np
 import pandas as pd
@@ -8,8 +11,8 @@ from pytorch_tabnet.tab_model import TabNetRegressor
 from sklearn.metrics import mean_absolute_percentage_error as MAPE
 
 sys.path.append(os.getcwd())
-from utils import CAT_COLS, CONT_COLS, preprocess_for_nn
-from utils_torch import WandbCallback, tabnet_mape
+from utils import CAT_COLS, CONT_COLS, preprocess_for_nn  # noqa
+from models.model_utils import WandbCallback, tabnet_mape  # noqa
 
 
 if __name__ == "__main__":

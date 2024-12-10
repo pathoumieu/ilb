@@ -1,22 +1,23 @@
-import os, yaml, argparse, sys
+import os
+import sys
+import yaml
+import argparse
 import wandb
 import umap
 import numpy as np
 import pandas as pd
 from icecream import ic
-from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import FunctionTransformer
 from catboost import CatBoostRegressor
 from wandb.catboost import WandbCallback
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_absolute_percentage_error as MAPE
-from crossval_ensemble.custom_pipeline import CustomRegressionPipeline
 from crossval_ensemble.custom_transformed_target_regressor import CustomTransformedTargetRegressor
 from crossval_ensemble.crossval_pipeline import CrossvalRegressionPipeline
 from sklearn.decomposition import PCA
 
 sys.path.append(os.getcwd())
-from utils import create_preprocessor, prepare_datasets, process_and_enrich_features, CAT_COLS, CONT_COLS
+from utils import create_preprocessor, prepare_datasets_with_pipeline, process_and_enrich_features, CAT_COLS, CONT_COLS  # noqa
 
 
 if __name__ == "__main__":
@@ -66,7 +67,7 @@ if __name__ == "__main__":
         random_state=0
         )
 
-    X_train, X_test = prepare_datasets(
+    X_train, X_test, _ = prepare_datasets_with_pipeline(
         X_train,
         X_test,
         quantile_transform=config.get('quantile_tranform'),
@@ -115,7 +116,9 @@ if __name__ == "__main__":
     if config.get('dont_use_size'):
         cont_cols.remove('size')
 
-    X_train, X_valid, y_train, y_valid = train_test_split(X_train, y_train, test_size=config.get('valid_size'), random_state=0)
+    X_train, X_valid, y_train, y_valid = train_test_split(
+        X_train, y_train, test_size=config.get('valid_size'), random_state=0
+        )
 
     if config.get('pseudo_labels'):
         if type(config.get('pseudo_labels')) is bool:
@@ -127,7 +130,10 @@ if __name__ == "__main__":
         pseudo_labels = pd.read_csv(datadir + f'/{pseudo_label_names}.csv')
         ul = config.get('uncertainty_level')
         X_train = pd.concat([X_train, X_test[pseudo_labels.uncertainty < ul]], axis=0)
-        y_train = pd.concat([y_train, pseudo_labels.loc[pseudo_labels.uncertainty < ul,  ['id_annonce', 'price']]], axis=0)
+        y_train = pd.concat([
+            y_train,
+            pseudo_labels.loc[pseudo_labels.uncertainty < ul,  ['id_annonce', 'price']]
+            ], axis=0)
 
     preprocess_mapper = create_preprocessor(cont_cols, CAT_COLS)
 
@@ -185,7 +191,6 @@ if __name__ == "__main__":
     artifact = wandb.Artifact(name="submission", type="test predictions")
     artifact.add_file(local_path=f'{dfd}/submission.csv')
     run.log_artifact(artifact)
-
 
     run.log(
         {

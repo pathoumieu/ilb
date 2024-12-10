@@ -1,4 +1,7 @@
-import os, yaml, argparse, sys
+import os
+import sys
+import yaml
+import argparse
 import wandb
 import numpy as np
 import pandas as pd
@@ -11,9 +14,10 @@ from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 from pytorch_lightning.callbacks import ModelCheckpoint
 
 sys.path.append(os.getcwd())
-from utils import CAT_COLS, CONT_COLS, preprocess_for_nn, resize_with_padding
-from utils_torch import get_dataloader, load_trained_tabnet
-from models.lightning_model import RealEstateModel
+from utils import CAT_COLS, CONT_COLS, preprocess_for_nn, resize_with_padding  # noqa
+from models.data_loader import get_dataloader  # noqa
+from models.model_utils import load_trained_tabnet  # noqa
+from models.lightning_model import RealEstateModel  # noqa
 
 
 if __name__ == "__main__":
@@ -90,7 +94,10 @@ if __name__ == "__main__":
         pseudo_labels = pd.read_csv(datadir + f'/{pseudo_label_names}.csv')
         ul = config.get('uncertainty_level')
         X_train = pd.concat([X_train, X_test[pseudo_labels.uncertainty < ul]], axis=0)
-        y_train = pd.concat([y_train, pseudo_labels.loc[pseudo_labels.uncertainty < ul,  ['id_annonce', 'price']]], axis=0)
+        y_train = pd.concat([
+            y_train,
+            pseudo_labels.loc[pseudo_labels.uncertainty < ul,  ['id_annonce', 'price']]
+            ], axis=0)
 
     # Assuming you have X_train, y_train, and the image folder directory
     # Create transforms for image processing
@@ -146,7 +153,12 @@ if __name__ == "__main__":
     if config.get('frozen_pretrained_tabnet'):
         pretrained_tabnet = load_trained_tabnet(run, version=config.get('tabnet_version'), freeze=True, device=device)
     elif config.get('embed_frozen_pretrained_tabnet'):
-        pretrained_tabnet = load_trained_tabnet(run, version=config.get('tabnet_version'), freeze=False, freeze_embed=True, device=device)
+        pretrained_tabnet = load_trained_tabnet(
+            run, version=config.get('tabnet_version'),
+            freeze=False,
+            freeze_embed=True,
+            device=device
+            )
     else:
         pretrained_tabnet = None
 

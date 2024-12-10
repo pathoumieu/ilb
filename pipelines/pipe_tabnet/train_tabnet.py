@@ -1,4 +1,7 @@
-import os, yaml, argparse, sys
+import os
+import sys
+import yaml
+import argparse
 import wandb
 import numpy as np
 import pandas as pd
@@ -8,8 +11,8 @@ from pytorch_tabnet.tab_model import TabNetRegressor
 from sklearn.metrics import mean_absolute_percentage_error as MAPE
 
 sys.path.append(os.getcwd())
-from utils import CAT_COLS, CONT_COLS, preprocess_for_nn
-from utils_torch import WandbCallback, tabnet_mape
+from utils import CAT_COLS, CONT_COLS, preprocess_for_nn  # noqa
+from models.model_utils import WandbCallback, tabnet_mape  # noqa
 
 
 if __name__ == "__main__":
@@ -88,7 +91,7 @@ if __name__ == "__main__":
 
     if config.get('cycle_lr'):
         scheduler_fn = torch.optim.lr_scheduler.OneCycleLR
-        scheduler_params={
+        scheduler_params = {
             "is_batch_level": True,
             "max_lr": config.get('max_lr'),
             "steps_per_epoch": int(X_train.shape[0] / config.get('batch_size')) + 1,
@@ -96,8 +99,8 @@ if __name__ == "__main__":
             "anneal_strategy": "cos"
         }
     else:
-        scheduler_fn=torch.optim.lr_scheduler.ReduceLROnPlateau
-        scheduler_params={
+        scheduler_fn = torch.optim.lr_scheduler.ReduceLROnPlateau
+        scheduler_param = {
             "mode": 'min',
             "factor": config.get('lr_factor'),
             "patience": config.get('lr_patience'),

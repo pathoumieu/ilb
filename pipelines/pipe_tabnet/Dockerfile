@@ -9,7 +9,7 @@ RUN pip install -r requirements.txt
 
 COPY --link pipelines/pipe_tabnet/train_tabnet.py ./
 COPY --link utils.py ./
-COPY --link utils_torch.py ./
+COPY --link models ./
 COPY --link pipelines/pipe_tabnet/config.yml ./
 
 ENTRYPOINT ["python", "train_tabnet.py"]
