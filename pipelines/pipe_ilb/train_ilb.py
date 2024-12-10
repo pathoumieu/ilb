@@ -17,7 +17,7 @@ from crossval_ensemble.crossval_pipeline import CrossvalRegressionPipeline
 from sklearn.decomposition import PCA
 
 sys.path.append(os.getcwd())
-from utils import create_preprocessor, prepare_datasets_with_pipeline, process_and_enrich_features, CAT_COLS, CONT_COLS  # noqa
+from utils import create_preprocessor, prepare_datasets, process_and_enrich_features, CAT_COLS, CONT_COLS  # noqa
 
 
 if __name__ == "__main__":
@@ -67,7 +67,7 @@ if __name__ == "__main__":
         random_state=0
         )
 
-    X_train, X_test, _ = prepare_datasets_with_pipeline(
+    X_train, X_test, _ = prepare_datasets(
         X_train,
         X_test,
         quantile_transform=config.get('quantile_tranform'),
