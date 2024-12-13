@@ -1,4 +1,7 @@
-import os, yaml, argparse, sys
+import os
+import sys
+import yaml
+import argparse
 import wandb
 import numpy as np
 import pandas as pd
@@ -8,17 +11,17 @@ from pytorch_tabnet.tab_model import TabNetRegressor
 from sklearn.metrics import mean_absolute_percentage_error as MAPE
 
 sys.path.append(os.getcwd())
-from utils import CAT_COLS, CONT_COLS, preprocess
-from utils_torch import WandbCallback, tabnet_mape
+from preprocess.preprocess import CAT_COLS, CONT_COLS, preprocess_for_nn  # noqa
+from models.model_utils import WandbCallback, tabnet_mape  # noqa
 
 
 if __name__ == "__main__":
 
-    cfd = os.environ.get("CONFIG_FILE_DIR", f"{os.getcwd()}/pipe_tabnet")
-    dfd = os.environ.get("DATA_FILE_DIR", f"{os.getcwd()}/data")
+    config_file_dir = os.environ.get("CONFIG_FILE_DIR", f"{os.getcwd()}/pipelines/pipe_tabnet")
+    data_file_dir = os.environ.get("DATA_FILE_DIR", f"{os.getcwd()}/data")
 
     parser = argparse.ArgumentParser(description='')
-    parser.add_argument('--config-path', type=str, help='', default=f'{cfd}/config.yml')
+    parser.add_argument('--config-path', type=str, help='', default=f'{config_file_dir}/config.yml')
     parser.add_argument('--run-name', type=str, help='', default=None)
 
     args = vars(parser.parse_args())
@@ -48,13 +51,13 @@ if __name__ == "__main__":
     config = run.config
 
     # Load the tabular data
-    X_train = pd.read_csv(f"{dfd}/X_train_J01Z4CN.csv")
-    y_train = pd.read_csv(f"{dfd}/y_train_OXxrJt1.csv")
-    X_test = pd.read_csv(f"{dfd}/X_test_BEhvxAN.csv")
-    y_random = pd.read_csv(f"{dfd}/y_random_MhJDhKK.csv")
+    X_train = pd.read_csv(f"{data_file_dir}/X_train_J01Z4CN.csv")
+    y_train = pd.read_csv(f"{data_file_dir}/y_train_OXxrJt1.csv")
+    X_test = pd.read_csv(f"{data_file_dir}/X_test_BEhvxAN.csv")
+    y_random = pd.read_csv(f"{data_file_dir}/y_random_MhJDhKK.csv")
 
     # Preprocess
-    X_train, y_train, X_valid, y_valid, X_test, categorical_dims = preprocess(
+    X_train, y_train, X_valid, y_valid, X_test, categorical_dims = preprocess_for_nn(
         X_train,
         y_train,
         X_test,
@@ -122,15 +125,15 @@ if __name__ == "__main__":
     y_pred_test = np.exp(clf.predict(X_test[cols].values))
 
     y_random['price'] = y_pred_test
-    y_random.to_csv(f'{dfd}/submission.csv', index=False)
+    y_random.to_csv(f'{data_file_dir}/submission.csv', index=False)
     artifact = wandb.Artifact(name="submission", type="test predictions")
-    artifact.add_file(local_path=f'{dfd}/submission.csv')
+    artifact.add_file(local_path=f'{data_file_dir}/submission.csv')
     run.log_artifact(artifact)
 
-    saving_path_name = f"{dfd}/tabnet_model.pt"
+    saving_path_name = f"{data_file_dir}/tabnet_model.pt"
     saved_filepath = clf.save_model(saving_path_name)
     artifact = wandb.Artifact(name="tabnet_model", type="model")
-    artifact.add_file(local_path=f'{dfd}/tabnet_model.pt.zip')
+    artifact.add_file(local_path=f'{data_file_dir}/tabnet_model.pt.zip')
     run.log_artifact(artifact)
 
     run.log(

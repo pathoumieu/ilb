@@ -1,10 +1,11 @@
 # syntax=docker/dockerfile:1.4
 
-FROM thoumieupa/train_base:latest
+# Use the official Python 3.10 image from Docker Hub
+FROM python:3.10
 RUN apt update && apt install gcc -y && apt install -y git
 
 RUN pip install --upgrade pip
-COPY --link pipe_ilb/requirements.txt ./
+COPY --link pipelines/pipe_ilb/requirements.txt ./
 RUN pip install -r requirements.txt
 
 WORKDIR /train_ilb
@@ -16,9 +17,9 @@ ENV CONFIG_FILE_DIR=.
 ENV DATA_FILE_DIR=./data
 
 
-COPY --link pipe_ilb/train_ilb.py ./
-COPY --link utils.py ./
-COPY --link pipe_ilb/config.yml ./
+COPY --link pipelines/pipe_ilb/train_ilb.py ./
+COPY --link preprocess/ ./
+COPY --link pipelines/pipe_ilb/config.yml ./
 
 COPY --link data/X_train_J01Z4CN.csv ./data/
 COPY --link data/y_train_OXxrJt1.csv ./data/

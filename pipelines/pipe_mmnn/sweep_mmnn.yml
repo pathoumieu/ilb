@@ -6,7 +6,7 @@ metric:
 parameters:
   job:
     values:
-      - thoumieupa/ILB/job-thoumieupa_train_ilb:latest
+      - pathoumieu/ILB/job-pathoumieu_train_ilb:latest
     distribution: categorical
   max_epochs:
     value: 20

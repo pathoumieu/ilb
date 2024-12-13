@@ -1,19 +1,17 @@
 import os
-from PIL import Image
 import argparse
 import wandb
 import torch
 import yaml
 import pandas as pd
+from PIL import Image
 from tqdm import tqdm
-from icecream import ic
 from torchvision import transforms, models
-from efficientnet_pytorch import EfficientNet
 from torchvision.models.vision_transformer import vit_l_16
 from torchvision.models import ViT_L_16_Weights
 import torch.nn.functional as F
 import timm
-from resize_images import resize_with_padding
+from preprocess.preprocess import resize_with_padding
 
 
 def load_efficientnet_model(model_name='tf_efficientnet_b1_ns', pretrained=True):
@@ -40,7 +38,6 @@ def extract_image_features(image_path, model, model_name):
             features = model.layer3(features)
             features = model.layer4(features)
             features = model.avgpool(features)
-
 
     elif model_name == "efficientnet":
         # Transformation for images
@@ -106,7 +103,10 @@ def get_image_features(model, model_name, dataset='train'):
                 combined_features = id_ann + list(average_image_feature)
                 features_list.append(combined_features)
 
-    return pd.DataFrame(features_list, columns=['id_annonce', * [f'image_feature_{i}' for i in range(average_image_feature.size)]])
+    return pd.DataFrame(
+        features_list, 
+        columns=['id_annonce', * [f'image_feature_{i}' for i in range(average_image_feature.size)]]
+        )
 
 
 if __name__ == "__main__":

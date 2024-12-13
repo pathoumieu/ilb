@@ -1,9 +1,8 @@
 import os
 from PIL import Image
-from icecream import ic
 from pathlib import Path
 from tqdm import tqdm
-from utils_torch import resize_with_padding
+from preprocess.preprocess import resize_with_padding
 
 TARGET_SIZE = 128
 

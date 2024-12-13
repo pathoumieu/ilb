@@ -1,4 +1,7 @@
-import os, yaml, argparse, sys
+import os
+import sys
+import yaml
+import argparse
 import wandb
 import numpy as np
 import pandas as pd
@@ -10,61 +13,76 @@ from sklearn.metrics import mean_absolute_percentage_error as MAPE
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 from pytorch_lightning.callbacks import ModelCheckpoint
 
+# Import custom modules
 sys.path.append(os.getcwd())
-from utils import CAT_COLS, CONT_COLS, preprocess
-from utils_torch import get_dataloader, load_trained_tabnet
-from models import RealEstateModel, resize_with_padding
+from preprocess.pseudo_labels import add_pseudo_labels  # noqa
+from preprocess.preprocess import CAT_COLS, CONT_COLS, preprocess_for_nn, resize_with_padding  # noqa
+from models.data_loader import get_dataloader  # noqa
+from models.model_utils import load_trained_tabnet  # noqa
+from models.lightning_model import RealEstateModel  # noqa
 
 
 if __name__ == "__main__":
+    """
+    Main script for training a multi-modal neural network (MMNN) on real estate data.
+    The script performs the following steps:
+    1. Parse command-line arguments and load configurations.
+    2. Load tabular and image data.
+    3. Preprocess data for training.
+    4. Train the model with PyTorch Lightning.
+    5. Save predictions and the trained model to WandB.
+    """
 
-    cfd = os.environ.get("CONFIG_FILE_DIR", f"{os.getcwd()}/pipe_mmnn")
-    dfd = os.environ.get("DATA_FILE_DIR", f"{os.getcwd()}/data")
+    # 1. Configuration and environment setup
+    # Define directories for config files and data
+    config_file_dir = os.environ.get("CONFIG_FILE_DIR", f"{os.getcwd()}/pipelines/pipe_mmnn")
+    data_file_dir = os.environ.get("DATA_FILE_DIR", f"{os.getcwd()}/data")
 
     parser = argparse.ArgumentParser(description='')
-    parser.add_argument('--config-path', type=str, help='', default=f'{cfd}/config.yml')
+    parser.add_argument('--config-path', type=str, help='', default=f'{config_file_dir}/config.yml')
     parser.add_argument('--run-name', type=str, help='', default=None)
 
     args = vars(parser.parse_args())
 
-    # Get config and params
+    # Load configuration from the YAML file
     with open(args['config_path']) as file_:
-        # The FullLoader parameter handles the conversion from YAML
-        # scalar values to Python the dictionary format
+        # Load YAML file to a Python dictionary
         default_config = yaml.load(file_, Loader=yaml.FullLoader)
 
+    # Prepare WandB configuration by merging necessary parameters
     wandb_config = {key: value for key, value in default_config.items() if key != 'model_params'}
-
     wandb_config.update(default_config['model_params'])
     wandb_config.update(default_config['embed_dims'])
 
+    # Initialize WandB logging
     wandb.login()
-
     run = wandb.init(
-        # set the wandb project where this run will be logged
-        project='ILB',
-        tags=default_config['tags'],
-        name=args['run_name'],
-        # track hyperparameters and run metadata
-        config=wandb_config
+        project='ILB',  # WandB project name
+        tags=default_config['tags'],  # Tags for the run
+        name=args['run_name'],  # Custom run name if provided
+        config=wandb_config  # Log configuration to WandB
     )
     run_name = run.name
-    config = run.config
+    config = run.config  # Access configuration parameters
 
-    # Load the tabular data
+    # 2. Load data
+    # Load tabular data
     if config.get('debug'):
-        X_train = pd.read_csv(f"{dfd}/X_train_J01Z4CN.csv").sample(frac=0.01)
-        y_train = pd.read_csv(f"{dfd}/y_train_OXxrJt1.csv").iloc[X_train.index]
-        X_test = pd.read_csv(f"{dfd}/X_test_BEhvxAN.csv").sample(frac=0.01)
-        y_random = pd.read_csv(f"{dfd}/y_random_MhJDhKK.csv").iloc[X_test.index]
+        # Use a smaller dataset for debugging
+        X_train = pd.read_csv(f"{data_file_dir}/X_train_J01Z4CN.csv").sample(frac=0.01)
+        y_train = pd.read_csv(f"{data_file_dir}/y_train_OXxrJt1.csv").iloc[X_train.index]
+        X_test = pd.read_csv(f"{data_file_dir}/X_test_BEhvxAN.csv").sample(frac=0.01)
+        y_random = pd.read_csv(f"{data_file_dir}/y_random_MhJDhKK.csv").iloc[X_test.index]
     else:
-        X_train = pd.read_csv(f"{dfd}/X_train_J01Z4CN.csv")
-        y_train = pd.read_csv(f"{dfd}/y_train_OXxrJt1.csv")
-        X_test = pd.read_csv(f"{dfd}/X_test_BEhvxAN.csv")
-        y_random = pd.read_csv(f"{dfd}/y_random_MhJDhKK.csv")
+        # Load full dataset for training and testing
+        X_train = pd.read_csv(f"{data_file_dir}/X_train_J01Z4CN.csv")
+        y_train = pd.read_csv(f"{data_file_dir}/y_train_OXxrJt1.csv")
+        X_test = pd.read_csv(f"{data_file_dir}/X_test_BEhvxAN.csv")
+        y_random = pd.read_csv(f"{data_file_dir}/y_random_MhJDhKK.csv")
 
-    # Preprocess
-    X_train, y_train, X_valid, y_valid, X_test, categorical_dims = preprocess(
+    # 3. Preprocess data
+    # Preprocess tabular data
+    X_train, y_train, X_valid, y_valid, X_test, categorical_dims = preprocess_for_nn(
         X_train,
         y_train,
         X_test,
@@ -73,28 +91,18 @@ if __name__ == "__main__":
         n_quantiles=config.get('n_quantiles'),
         clip_rooms=config.get('clip_rooms')
         )
+
+    # Prepare categorical columns
     cat_idxs = list(range(len(CAT_COLS)))
     cat_dims = [categorical_dims[f] for f in CAT_COLS]
-    # cat_emb_dim = [max(1, int(categorical_dims[f] / config.get('embed_scale'))) for f in CAT_COLS]
     embed_dims = {key.split('_embed_dim')[0]: value for key, value in config.items() if key.endswith('embed_dim')}
     cat_emb_dim = [embed_dims[f] for f in CAT_COLS]
     cols = CAT_COLS + CONT_COLS
 
-    if config.get('pseudo_labels'):
-        if type(config.get('pseudo_labels')) is bool:
-            pseudo_label_names = "submission_peach_salad_mild_feather_stack7030_uncertainty"
-        else:
-            pseudo_label_names = config.get('pseudo_labels')
-        artifact = run.use_artifact(f'{pseudo_label_names}:v0')
-        datadir = artifact.download()
-        pseudo_labels = pd.read_csv(datadir + f'/{pseudo_label_names}.csv')
-        ul = config.get('uncertainty_level')
-        X_train = pd.concat([X_train, X_test[pseudo_labels.uncertainty < ul]], axis=0)
-        y_train = pd.concat([y_train, pseudo_labels.loc[pseudo_labels.uncertainty < ul,  ['id_annonce', 'price']]], axis=0)
+    # Add pseudo labels to the dataset
+    X_train, y_train = add_pseudo_labels(X_train, X_test, y_train, run, config)
 
-    # Assuming you have X_train, y_train, and the image folder directory
-    # Create transforms for image processing
-    # Assuming config is defined
+    # Create image transformation pipeline
     if config.get('target_size') > 0:
         im_size = (config.get('target_size'), config.get('target_size'))
         transform = transforms.Lambda(lambda x: resize_with_padding(x, config.get('target_size')))
@@ -102,30 +110,29 @@ if __name__ == "__main__":
         im_size = config.get('im_size')
         transform = transforms.Resize(config.get('im_size'))
 
+    # Apply optional data augmentation for images
     if config.get('image_aug'):
         color_jitter_transform = transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.2)
         transform = transforms.Compose([
-            transform,  # Add the initial transform here
+            transform,
             transforms.RandomHorizontalFlip(p=0.5),
             transforms.RandomRotation(degrees=15),
             transforms.RandomApply([color_jitter_transform], p=0.5),
         ])
 
-    # If you want to include ToTensor in the transformation, you can do it here
-    transform = transforms.Compose([
-        transform,
-        transforms.ToTensor(),
-    ])
+    # Finalize the transformation pipeline
+    transform = transforms.Compose([transform, transforms.ToTensor()])
     if config.get('norm_image'):
         transform = transforms.Compose([
             transform,  # Add the previous transform here
             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),  # Add normalization transform
         ])
 
+    # Apply log transformation to the target variable
     target_train = y_train.price.apply(np.log)
     target_valid = y_valid.price.apply(np.log)
 
-    # Create datasets and dataloaders
+    # Create PyTorch DataLoaders for training, validation, and testing
     dataloader_train = get_dataloader(
         X_train, cols, target_train, True, 'train', im_size=im_size,
         transform=transform, batch_size=config.get('batch_size'), num_workers=config.get('num_workers')
@@ -138,57 +145,55 @@ if __name__ == "__main__":
         X_test, cols, X_test.id_annonce, False, 'test', im_size=im_size,
         transform=transform, batch_size=config.get('predict_batch_size'), num_workers=config.get('num_workers')
         )
-    # Create the model
-    if torch.cuda.is_available():
-        device = "cuda"
-    else:
-        device = "cpu"
+
+    # Determine the device to use for training
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+
+    # 4. Train the model with lightning
+    # Load a pre-trained TabNet model if specified in the configuration
     if config.get('frozen_pretrained_tabnet'):
         pretrained_tabnet = load_trained_tabnet(run, version=config.get('tabnet_version'), freeze=True, device=device)
     elif config.get('embed_frozen_pretrained_tabnet'):
-        pretrained_tabnet = load_trained_tabnet(run, version=config.get('tabnet_version'), freeze=False, freeze_embed=True, device=device)
+        pretrained_tabnet = load_trained_tabnet(
+            run, version=config.get('tabnet_version'),
+            freeze=False,
+            freeze_embed=True,
+            device=device
+            )
     else:
         pretrained_tabnet = None
 
-    if config.get('cycle_lr'):
-        scheduler_params = {
-            "max_lr": config.get('max_lr'),
-            "steps_per_epoch": int(X_train.shape[0] / config.get('batch_size')) + 1,
-            "epochs": config.get('max_epochs'),
-            "anneal_strategy": "cos"
-        }
-    else:
-        scheduler_params = {}
+    # Configure the learning rate scheduler if cyclic learning rate is enabled
+    scheduler_params = {
+        "max_lr": config.get('max_lr'),
+        "steps_per_epoch": int(X_train.shape[0] / config.get('batch_size')) + 1,
+        "epochs": config.get('max_epochs'),
+        "anneal_strategy": "cos"
+    } if config.get('cycle_lr') else {}
 
-    model_params = {
+    # Define the model parameters
+    required_keys = [
+        'image_model_name', 'hidden_size', 'last_layer_size', 'n_heads', 'n_layers',
+        'transformer_attention', 'lr', 'weight_decay', 'lr_factor', 'lr_patience',
+        'pretrain', 'mid_level_layer', 'dropout', 'loss_name', 'batch_norm', 'clip_grad'
+    ]
+    model_params = {key: config.get(key) for key in required_keys}
+
+    # Add additional keys that aren't directly from config
+    model_params.update({
         'tabular_input_size': len(X_train.columns) - 1,
         'im_size': im_size,
-        'image_model_name': config.get('image_model_name'),
-        'hidden_size': config.get('hidden_size'),
-        'last_layer_size': config.get('last_layer_size'),
-        'n_heads': config.get('n_heads'),
-        'n_layers': config.get('n_layers'),
-        'transformer_attention': config.get('transformer_attention'),
-        'lr': config.get('lr'),
-        'weight_decay': config.get('weight_decay'),
-        'lr_factor': config.get('lr_factor'),
-        'lr_patience': config.get('lr_patience'),
-        'pretrain': config.get('pretrain'),
         'cat_idxs': cat_idxs,
         'cat_dims': cat_dims,
         'cat_emb_dim': cat_emb_dim,
         'pretrained_tabnet': pretrained_tabnet,
-        'mid_level_layer': config.get('mid_level_layer'),
-        'dropout': config.get('dropout'),
-        'loss_name': config.get('loss_name'),
-        'batch_norm': config.get('batch_norm'),
-        'clip_grad': config.get('clip_grad'),
-        'scheduler_params': scheduler_params
-    }
+        'scheduler_params': scheduler_params,
+    })
 
+    # Initialize the model
     model = RealEstateModel(**model_params)
 
-    # Initialize a trainer
+    # Set up PyTorch Lightning Trainer with callbacks
     wandb_logger = WandbLogger(log_model="all")
     checkpoint_callback = ModelCheckpoint(save_top_k=1, monitor="valid_mape", mode="min")
     early_stopping = EarlyStopping(monitor="valid_mape", mode="min", patience=config.get('patience'))
@@ -200,15 +205,13 @@ if __name__ == "__main__":
         enable_progress_bar=True,
         enable_model_summary=True,
         logger=wandb_logger,
-        callbacks=[
-            early_stopping,
-            checkpoint_callback
-            ]
+        callbacks=[early_stopping, checkpoint_callback]
     )
 
     # Train the model
     trainer.fit(model, dataloader_train, val_dataloaders=dataloader_valid)
 
+    # Reload the best model weights
     print('Reloading best weights...')
     best_model = RealEstateModel.load_from_checkpoint(
             checkpoint_callback.best_model_path,
@@ -218,13 +221,14 @@ if __name__ == "__main__":
     # y_pred_train = np.exp(clf.predict(X_train[cols].values))
     y_pred_valid = np.exp(np.concatenate(trainer.predict(best_model, dataloaders=dataloader_valid))).flatten()
 
+    # 5. Save outputs
     if config.get('save'):
         predictions = trainer.predict(best_model, dataloaders=dataloader_test)
         y_random['price'] = np.exp(np.concatenate(predictions)).flatten()
-        y_random.to_csv(f'{dfd}/submission.csv', index=False)
+        y_random.to_csv(f'{data_file_dir}/submission.csv', index=False)
 
         artifact = wandb.Artifact(name="submission", type="test predictions")
-        artifact.add_file(local_path=f'{dfd}/submission.csv')
+        artifact.add_file(local_path=f'{data_file_dir}/submission.csv')
         run.log_artifact(artifact)
 
         artifact = wandb.Artifact(name="mmnn_model", type="model")
