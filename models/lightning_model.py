@@ -92,11 +92,11 @@ class RealEstateModel(pl.LightningModule):
     3. **Attention Mechanism**:
         - If the `transformer_attention` flag is set to `True`, an attention mechanism (either a Transformer
           or a gated attention) is applied to the image features.
-        - The attention mechanism is responsible for learning which parts of the image features are most
-          important, helping the model focus on key aspects of the image data for prediction.
+        - The attention mechanism is responsible for learning which images are most important, helping the model focus 
+          on key aspects of the real estate property images for prediction.
 
     4. **Combining Tabular and Image Features**:
-        - The features from the tabular data and the processed image features are combined (concatenated)
+        - The features from the tabular data and the processed images features are combined (concatenated)
           into a single feature vector.
         - These combined features are then passed through a fully connected layer to produce the final
           prediction.
